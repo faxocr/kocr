@@ -1,0 +1,81 @@
+#
+# Deverlopment Note
+#
+
+ * TODO
+
+ - libraryでの画像認識処理で、ファイルでなくopencvのオブジェクト渡しを可能に
+
+ - 精度管理オプションの充実
+   - exclude
+   - error
+   - ambiguity
+
+ - 非対応フォーマットを入力するとcoreを吐くのをなんとかする
+   - 対応画像フォーマット: png, pbm, pnm, bmp
+   - 非対応画像フォーマット: ppm (フルカラー), pgm (グレイスケール), gif
+
+ - リファクタリング
+   - いきなりfprintfしているところを#ifdef DEBUGにする
+   - shortである必然性がないところがshortになってないか
+   - 変数の型と代入している値の不整合
+
+*** *** ***
+
+ * pbm to png変換メモ (うまくいかない...)
+
+ pbm -> pgm / pbmtopgm 14 14 filename > outfile
+ pgm -> ppm / pgmtoppm black filename > outfile
+ ppm -> gif / ppmtogif
+ gif -> pnm / giftopnm
+ pnm -> png / pngtopng
+
+ - sheetreader: ? -> ppm -> pgm -> gocr
+ - (pbm or png) to (ppm or pgm)
+ - OK
+   - ppm to bmp
+   - pgm to pbm
+
+*** *** ***
+
+ * 対応済み
+
+ x main()を、argc, argvに切り替え
+ x trainingモード (default)
+ x 学習データベースのpacking機能
+ x leave_one_out test機能の学習データベースunpacking機能
+ x 学習データベースのファイル出力機能
+ x 学習データベースのファイル入力機能
+ x 認識モード実装
+ x 画像前処置のサブルーチン化
+ x 名称をkocrに・ファイルを整理
+ x ディレクトリのハードコードを辞める
+ x file DBのgocrと統合化
+ x dbファイルのフォーマット (offset化)
+ x 入力チェックをあまりしていません
+ x 不正なファイルを入力すると容易にsegfaultを生じます
+ x subr.cppのグローバル変数渡しを解消
+ x デバッグコードの除去 / 清書
+ x indent -i4 を実行した
+ x UTF-8が化けたので手で直した
+ x 実行形式に必要な部分をmain.cppに移動した
+ x Labeling.hだけはC++なのですね。よって、Cに直すのはやめた
+ x グローバル変数のうち、ファイル内staticにできるものはstaticにした
+
+ x malloc/freeの対応付けを確認、修正した
+  - subr.cpp: Contour_Detect()のcallocは？				done
+  - subr.cpp: db_load()でmallocしたものはずっと使うはず			done
+  - kocr.cpp: training()でのmallocはずっと使うはず→exitする		done
+  - kocr.cpp: training()でのdbは？ → saveしてexit			done
+  - kocr.cpp: recognize_multi()でのretstrはどこでfree?			done
+  - kocr.cpp: print_line()のcache_linesは？
+	 → 多重にmallocしないようにした				done
+
+ x Data[][]をグローバル変数じゃなくする
+ x statusをstaticにする
+  - subr.cppの中でstaticに宣言						done
+  - kocr.cppからはstatusとData[][]を格納した構造体のポインタでアクセス	done
+ x db_loadは最初の一回だけでいい
+  → kocr_initの中でdb_loadするようにした				done
+
+ x 外部APIをkocr.cpp中で定義した
