@@ -207,10 +207,10 @@ training(char *list_file)
 	    Class[n] = *(p + 1);
 	    sprintf(charfname, "%s/%s", tgt_dir, linebuf);
 	} else {
+	    Class[n] = '0';
 	    n++;
 	    continue;
 	}
-
 
 	// XXX: グローバル変数渡しを修正し、エラーチェックを入れる
 	Extract_Feature(charfname, &df);
@@ -351,7 +351,12 @@ leave_one_out_test(feature_db * db)
 		    ERR_DIR, miss,
 		    classData[n], n,
 		    classData[min_char_data], min_char_data);
-	    cvSaveImage(fn, misrecog);
+	    try {
+	      cvSaveImage(fn, misrecog);
+	    } catch (cv::Exception &e) {
+	      const char* err_msg = e.what();
+	      //printf("%s\n", err_msg);
+	    }
 	}
     }
 

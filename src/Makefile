@@ -12,8 +12,8 @@ TARGET  = kocr
 CPPFLAGS = `pkg-config --cflags opencv`
 OPT_OPENCV = `pkg-config --cflags opencv`
 LDFLAGS = `pkg-config --libs opencv`
-#OPT	= -O3
-OPT	= -g
+OPT	= -O3
+#OPT	= -g
 # OPT	= -O3 -static
 
 $(TARGET): $(OBJS)
