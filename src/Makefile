@@ -17,7 +17,7 @@ OPT	= -O3
 # OPT	= -O3 -static
 
 $(TARGET): $(OBJS)
-	$(CC) `pkg-config --libs opencv` -o $@ $(OBJS)
+	$(CC) -o $@ $(OBJS) `pkg-config --libs opencv`
 
 # doesn't work...orz
 static:
