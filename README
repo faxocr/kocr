@@ -10,7 +10,16 @@
  再学習は容易で、さまざまな用途に対応できます。また、オープンソース
  形式で開発されており、自由に利用が可能です。
 
+ なお、複数文字の認識も可能です。
+
+ また、コンパイル時のオプションで、認識アルゴリズムを最近傍法とSVM法
+ とで切り替えることが可能です。なお、最近傍法のデータベースファイルは、
+ 拡張子.dbですが、SVM法は拡張子.xmlとなっています。下記は、適宜、読み
+ 替えてご利用下さい。
+
  * 使い方
+
+[最近傍法]
 
  - 手書き文字のサンプルを学習させ、「データベースファイル」を作ります
 
@@ -110,17 +119,9 @@ $
        /error	システムのエラー出力用
        /samples	読み取りテスト用サンプルファイル
 
+ * 外部API
 
- * 外部API 
-
-void kocr_exclude(feature_db * db, char *lst_name);
-	exclude()のwrapper
-
-void kocr_distance(feature_db * db, char *lst_name);
-	distance()のwrapper
-
-void kocr_average(feature_db * db, char *lst_name);
-	average()のwrapper
+[最近傍法]
 
 feature_db *kocr_init(char *filename);
 	kocr利用開始。db_load()した結果を返す。
@@ -130,4 +131,15 @@ char *kocr_recognize_image(feature_db * db, char *fname);
 	画像ファイルを認識する。返値は認識した文字列。
 
 void kocr_finish(feature_db *db);
-	kocr利用終了。dbを解放する。
+	kocr利用終了。DBを解放する。
+
+[SVM法]
+
+CvSVM *kocr_init(char *filename);
+	kocr利用開始。学習済みのSVMを返す。
+
+char *kocr_recognize_image(CvSVM *db, char *fname);
+	画像ファイルを認識する。返値は認識した文字列。
+
+void kocr_finish(CvSVM *db);
+	kocr利用終了。SVMを解放する。

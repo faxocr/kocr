@@ -4,13 +4,9 @@
 
  * TODO
 
- - libraryでの画像認識処理で、ファイルでなくopencvのオブジェクト渡しを可能に
+ - library化した際には、ファイルでなくopencvのオブジェクト渡しを可能にする
 
- - 精度管理オプションの充実
-   - exclude
-   - error
-   - ambiguity
-
+ - 存在しないファイルを入れるとsegfaultするのをなんとかする
  - 非対応フォーマットを入力するとcoreを吐くのをなんとかする
    - 対応画像フォーマット: png, pbm, pnm, bmp
    - 非対応画像フォーマット: ppm (フルカラー), pgm (グレイスケール), gif
@@ -20,21 +16,10 @@
    - shortである必然性がないところがshortになってないか
    - 変数の型と代入している値の不整合
 
-*** *** ***
-
- * pbm to png変換メモ (うまくいかない...)
-
- pbm -> pgm / pbmtopgm 14 14 filename > outfile
- pgm -> ppm / pgmtoppm black filename > outfile
- ppm -> gif / ppmtogif
- gif -> pnm / giftopnm
- pnm -> png / pngtopng
-
- - sheetreader: ? -> ppm -> pgm -> gocr
- - (pbm or png) to (ppm or pgm)
- - OK
-   - ppm to bmp
-   - pgm to pbm
+ - 必要に応じて、精度管理オプションを充実させる
+   - exclude
+   - error
+   - ambiguity
 
 *** *** ***
 
@@ -79,3 +64,19 @@
   → kocr_initの中でdb_loadするようにした				done
 
  x 外部APIをkocr.cpp中で定義した
+
+*** *** ***
+
+ * pbm to png変換メモ (うまくいかない...)
+
+ pbm -> pgm / pbmtopgm 14 14 filename > outfile
+ pgm -> ppm / pgmtoppm black filename > outfile
+ ppm -> gif / ppmtogif
+ gif -> pnm / giftopnm
+ pnm -> png / pngtopng
+
+ - sheetreader: ? -> ppm -> pgm -> gocr
+ - (pbm or png) to (ppm or pgm)
+ - OK
+   - ppm to bmp
+   - pgm to pbm

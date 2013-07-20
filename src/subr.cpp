@@ -42,8 +42,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+#ifdef USE_SVM
+#include <opencv/ml.h>
+#endif
 #include "kocr.h"
 #include "subr.h"
 #include "Labeling.h"
@@ -518,8 +522,8 @@ Extract_Feature(char *fname, datafolder **retdf)
     df.status = 0;
     *retdf = &df;
 
-    IplImage       *org_img = cvLoadImage(fname, CV_LOAD_IMAGE_ANYDEPTH |
-					  CV_LOAD_IMAGE_ANYCOLOR);
+    IplImage *org_img = cvLoadImage(fname, CV_LOAD_IMAGE_ANYDEPTH |
+				    CV_LOAD_IMAGE_ANYCOLOR);
     if (org_img == NULL) {
 	fprintf(stderr, "image file \"%s\": cannot be found.\n",
 		fname);

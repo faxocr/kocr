@@ -41,6 +41,9 @@
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+#ifdef USE_SVM
+#include <opencv/ml.h>
+#endif
 #include "kocr.h"
 #include "subr.h"
 #include "cropnums.h"
@@ -57,7 +60,7 @@ char *
 conv_fname(char *fname, const char *ext)
 {
     int		    slen = strlen(fname) + strlen(ext);
-    char           *newname = (char *)malloc(slen);
+    char           *newname = (char *) malloc(slen);
     char           *p;
 
     strcpy(newname, fname);
@@ -78,14 +81,24 @@ conv_fname(char *fname, const char *ext)
  * 利用法説明
  * ============================================================ */
 static void 
-usage(char *cmdname)
+usage()
 {
     printf("\n");
+#ifdef USE_SVM
+    printf("usage (SVM mode):\n\n");
+#else
     printf("usage:\n\n");
-    printf(" %s\timage-list\t\tCreates a database file\n", cmdname);
-    printf("\tdatabase-file target\tRecognize a character in target\n");
-    printf("\tdatabase-file\t\tEvaluates a database file\n\n");
-    printf("The system supports png and pbm.\n\n");
+#endif
+    printf(" kocr\timage-list\t\tCreates a database file\n");
+    printf("\tdatabase-file\t\tEvaluates a database file\n");
+    printf("\tdatabase-file target\tRecognize characters in target\n");
+    printf("\n");
+#ifdef USE_SVM
+    printf("\tdatabase-file: *.xml\n");
+#else
+    printf("\tdatabase-file: *.db\n");
+#endif
+    printf("\ttarget: *.[png|pbm|jpg]\n\n");
 }
 
 /* ============================================================
@@ -98,7 +111,28 @@ main(int argc, char *argv[])
     feature_db     *db;
     char           *resultstr;
 
-    if (argc > 1 && !is_database(argv[1])) {
+#ifdef USE_SVM
+    CvSVM *svm;
+
+    if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
+
+#if XML_TEST
+	// Database generation
+	db_name = conv_fname(argv[1], ".xml");
+	training(argv[1], db_name);
+#else
+	// Database generation
+	svm = training(argv[1]);
+	if (!svm)
+	    exit(-1);
+	db_name = conv_fname(argv[1], ".xml");
+	svm->save(db_name);
+#endif
+
+	exit(0);
+    }
+#else
+    if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
 
 	// Database generation
 	db = training(argv[1]);
@@ -110,18 +144,51 @@ main(int argc, char *argv[])
 
 	exit(0);
     }
+#endif /* USE_SVM */
 
     switch (argc) {
     case 2:
 
 	// Leave one out testing
+#ifdef USE_SVM
+	db_name = conv_fname(argv[1], ".db");
+	if (is_database(db_name)) {
+	  db = db_load(db_name);
+	  if (!db)
+	    exit(-1);
+
+	  leave_one_out_test(db, argv[1]);
+	} else {
+	  printf("Requires old .db file, for Leave-one-out test...\n");
+	}
+#else
 	db = db_load(argv[1]);
 	if (!db)
 	    exit(-1);
 	leave_one_out_test(db);
+#endif
 	break;
 
     case 3:
+
+#ifdef USE_SVM
+	// argv[1] trained data (xml)
+	// argv[2] target image
+	svm = kocr_svm_init(argv[1]);
+	if (!svm)
+	    exit(-1);
+
+	// Character recognition
+	resultstr = kocr_recognize_image(svm, argv[2]);
+	printf("Result: %s\n", resultstr);
+	free(resultstr);
+
+	kocr_svm_finish(svm);
+#else
+	if (!is_database(argv[1])) {
+	  printf("Requires old .db file for character recognition.\n");
+	  break;
+	}
 
 	db = kocr_init(argv[1]);
 	if (!db)
@@ -146,11 +213,12 @@ main(int argc, char *argv[])
 	    free(resultstr);
 	}
 	kocr_finish(db);
+#endif
 	break;
 
     case 1:
     default:
-	usage(argv[0]);
+	usage();
 	exit(0);
     }
 }
