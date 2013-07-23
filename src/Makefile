@@ -40,9 +40,9 @@ static: $(LIB_OBJS) $(OBJS)
 
 library:
 	rm -f *.o
-	$(CC) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c kocr.cpp
-	$(CC) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c subr.cpp
-	$(CC) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
+	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c kocr.cpp
+	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c subr.cpp
+	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
 	$(AR) rv libkocr.a kocr.o subr.o cropnums.o
 	ranlib libkocr.a
 	rm -f *.o

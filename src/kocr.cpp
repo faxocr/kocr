@@ -621,9 +621,6 @@ leave_one_out_test(feature_db * db)
 /* ============================================================
  * 文字認識用ドライバ
  * ============================================================ */
-#ifdef LIBRARY
-extern "C" 
-#endif
 char *
 #ifdef USE_SVM
 recognize(CvSVM *db, char *file_name)
@@ -775,9 +772,6 @@ recognize(feature_db *db, char *file_name)
     return strdup(result);
 }
 
-#ifdef LIBRARY
-extern "C" 
-#endif
 char *
 #ifdef USE_SVM
 recognize_multi(CvSVM *db, char *file_name)
@@ -920,7 +914,7 @@ recognize_multi(feature_db *db, char *file_name)
 	       class_data[min_char_data], min_dist);
 	printf("Credibility score %2.2f\n", 1 - n * min_dist / total);
 #endif
-#endif
+#endif //???
 
 	start_x = next_start;
 	seq_num++;
@@ -1261,9 +1255,6 @@ is_opencvxml(const char *file_name)
 /*
  * API for external modules
  */
-#ifdef LIBRARY
-extern "C" {
-#endif
 
 void
 kocr_exclude(feature_db *db, char *lst_name)
@@ -1286,13 +1277,6 @@ kocr_average(feature_db *db, char *lst_name)
     average(db, lst_name);
 }
 
-feature_db *
-kocr_init(char *filename)
-{
-    if (filename == NULL) return NULL;
-    return db_load(filename);
-}
-
 #ifdef USE_SVM
 CvSVM *
 kocr_svm_init(char *filename)
@@ -1306,6 +1290,13 @@ kocr_svm_init(char *filename)
     svm->load(filename);
 
     return svm;
+}
+#else
+feature_db *
+kocr_init(char *filename)
+{
+    if (filename == NULL) return NULL;
+    return db_load(filename);
 }
 #endif
 
@@ -1321,14 +1312,6 @@ kocr_recognize_image(feature_db *db, char *file_name)
     return recog_image(db, file_name);
 }
 
-void
-kocr_finish(feature_db *db)
-{
-    if (db != NULL) {
-	free(db);
-    }
-}
-
 #ifdef USE_SVM
 void
 kocr_svm_finish(CvSVM *svm)
@@ -1337,8 +1320,12 @@ kocr_svm_finish(CvSVM *svm)
       delete svm;
     }
 }
-#endif
-
-#ifdef LIBRARY
+#else
+void
+kocr_finish(feature_db *db)
+{
+    if (db != NULL) {
+	free(db);
+    }
 }
 #endif

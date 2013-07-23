@@ -42,9 +42,16 @@ double  DIRP_Dist(DIRP (*)[N][N], DIRP (*)[N][N]);
 void	Extract_Feature(char *, datafolder **);
 int	extract_feature2(IplImage *, datafolder **);
 int	db_save(char *, feature_db *);
-#ifdef LIBRARY
+
+#ifdef __cplusplus
+#define _EX_DECL
+#else
+#define _EX_DECL extern
+#endif
+
+#ifdef __cplusplus
 extern "C" 
 #endif
-feature_db *db_load(char *);
+_EX_DECL feature_db *db_load(char *);
 
 #endif /* SUBR_H */

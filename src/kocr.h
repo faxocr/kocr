@@ -85,58 +85,58 @@ typedef struct
 	int	status;
 } datafolder;		//1つのファイルを画像のピクセルごとに保存
 
-#ifdef LIBRARY
-extern "C" 
-#endif
-#ifdef USE_SVM
-	char *recognize(CvSVM *, char *);
+#ifdef __cplusplus
+#define _EX_DECL
 #else
-	char *recognize(feature_db *, char *);
+#define _EX_DECL extern
 #endif
 
-#ifdef LIBRARY
-extern "C" 
+#ifdef __cplusplus
+extern "C" {
 #endif
 #ifdef USE_SVM
-	char *recognize_multi(CvSVM *, char *);
+	_EX_DECL char *recognize(CvSVM *, char *);
 #else
-	char *recognize_multi(feature_db *, char *);
+	_EX_DECL char *recognize(feature_db *, char *);
 #endif
 
-char *conv_fname(char *, const char *);
-int is_database(const char *);
-int is_opencvxml(const char *);
+#ifdef USE_SVM
+	_EX_DECL char *recognize_multi(CvSVM *, char *);
+#else
+	_EX_DECL char *recognize_multi(feature_db *, char *);
+#endif
+
+_EX_DECL char *conv_fname(char *, const char *);
+_EX_DECL int is_database(const char *);
+_EX_DECL int is_opencvxml(const char *);
 
 #ifdef USE_SVM
 #if XML_TEST
-void *training(char *, char *);
+	_EX_DECL void *training(char *, char *);
 #else
-CvSVM *training(char *);
+	_EX_DECL CvSVM *training(char *);
 #endif
-void leave_one_out_test(feature_db *, char *);
+	_EX_DECL void leave_one_out_test(feature_db *, char *);
 #else
-feature_db *training(char *);
-void leave_one_out_test(feature_db *);
+	_EX_DECL feature_db *training(char *);
+	_EX_DECL void leave_one_out_test(feature_db *);
 #endif
 
-#ifdef LIBRARY
-extern "C" {
-#endif
-	void kocr_exclude(feature_db * db, char *lst_name);
-	void kocr_distance(feature_db * db, char *lst_name);
-	void kocr_average(feature_db * db, char *lst_name);
+	_EX_DECL void kocr_exclude(feature_db * db, char *lst_name);
+	_EX_DECL void kocr_distance(feature_db * db, char *lst_name);
+	_EX_DECL void kocr_average(feature_db * db, char *lst_name);
 
-	void kocr_finish(feature_db *db);
-	feature_db *kocr_init(char *filename);
 #ifdef USE_SVM
-	CvSVM *kocr_svm_init(char *);
-	void kocr_svm_finish(CvSVM *);
-	char *kocr_recognize_image(CvSVM *, char *);
+	_EX_DECL CvSVM *kocr_svm_init(char *);
+	_EX_DECL void kocr_svm_finish(CvSVM *);
+	_EX_DECL char *kocr_recognize_image(CvSVM *, char *);
 #else
-	char *kocr_recognize_image(feature_db *, char *);
+	_EX_DECL feature_db *kocr_init(char *filename);
+	_EX_DECL void kocr_finish(feature_db *db);
+	_EX_DECL char *kocr_recognize_image(feature_db *, char *);
 #endif
 
-#ifdef LIBRARY
+#ifdef __cplusplus
 }
 #endif
 
