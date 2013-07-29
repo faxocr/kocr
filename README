@@ -77,7 +77,7 @@ $ cat list-num.lst
 
 # apt-get install libcv-dev
 # apt-get install libhighgui-dev
-# apt-get install libcvaux-dev 
+# apt-get install libcvaux-dev
 
  そのうえで、srcディレクトリでmakeして下さい。
 
