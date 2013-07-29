@@ -115,6 +115,9 @@ $
        /mbsdb	手書○×△
        /iddb
        /idocrdb
+       /sample-ocrb	OCRBフォントファックスデータ
+       /sample-sf
+       /numocrb	/numbers と /sample-ocrb をマージしたもの
 
        /error	システムのエラー出力用
        /samples	読み取りテスト用サンプルファイル
