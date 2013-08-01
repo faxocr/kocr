@@ -1,0 +1,8 @@
+images/**/*.db
+images/**/*.xml
+*.lo
+*.o
+*.la
+*.a
+src/.libs/
+src/kocr
