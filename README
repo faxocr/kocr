@@ -92,6 +92,10 @@ $
 
  これで終わりです。
 
+ - SVM版のmake
+$ cd src
+$ make CFLAGS="-O3 -DUSE_SVM"
+
  * ファイル一覧
 
  README		このファイル
