@@ -79,7 +79,7 @@ $ cat list-num.lst
 # apt-get install libhighgui-dev
 # apt-get install libcvaux-dev
 
- そのうえで、srcディレクトリでmakeして下さい。
+ そのうえで、srcディレクトリでmakeして下さい。SVMバージョンがコンパイルされます。
 
 $ cd src
 $ make
@@ -92,9 +92,18 @@ $
 
  これで終わりです。
 
- - SVM版のmake
+ - 最近傍法版のmake
 $ cd src
-$ make CFLAGS="-O3 -DUSE_SVM"
+$ make CFLAGS="-O3"
+
+ - システムへのインストール(/usr/local 以下にインストールされます)
+$ cd src
+$ make install
+
+ インストール先を変える場合
+$ cd src
+$ make install PREFIX=/usr
+
 
  * ファイル一覧
 
