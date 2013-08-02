@@ -25,6 +25,7 @@ CFLAGS		= -O3 -DUSE_SVM
 all: $(TARGET)
 
 install: all
+	-(for dir in bin include lib share/kocr/databases; do mkdir -p $(PREFIX)/$$dir; done)
 	libtool --mode=install install -c kocr $(PREFIX)/bin
 	libtool --mode=install install -c libkocr.la $(PREFIX)/lib
 	install -c -m 444 -o root -g root kocr.h $(PREFIX)/include
