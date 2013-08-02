@@ -27,6 +27,8 @@ all: $(TARGET)
 install: all
 	libtool --mode=install install -c kocr $(PREFIX)/bin
 	libtool --mode=install install -c libkocr.la $(PREFIX)/lib
+	install -c -m 444 -o root -g root kocr.h $(PREFIX)/include
+	install -c -m 444 -o root -g root ../databases/* $(PREFIX)/share/kocr/databases
 
 # dynamic link version of kocr
 $(TARGET): $(LIB_OBJS) $(OBJS) libkocr.la
