@@ -14,7 +14,7 @@ TARGET         = kocr
 CFLAGS_OPENCV  = `pkg-config --cflags opencv`
 LDFLAGS_OPENCV = `pkg-config --libs opencv`
 
-CFLAGS		= -O3 -DUSE_SVM
+CFLAGS		= -O3 -DUSE_SVM -DLIBRARY
 # CFLAGS	= -g -DUSE_SVM
 # CFLAGS	= -O3
 # CFLAGS	= -g
