@@ -36,7 +36,7 @@ $(TARGET): $(LIB_OBJS) $(OBJS) libkocr.la
 	libtool --mode=link $(CXX) -o $@ $(OBJS) libkocr.la $(LDFLAGS_OPENCV) $(LDFLAGS)
 
 # static link version of kocr
-static: $(LIB_OBJS) $(OBJS)
+static: $(LIB_OBJS) $(OBJS) libkocr.la
 	libtool --mode=link $(CXX) -o kocr-static -static $(OBJS) libkocr.la $(LDFLAGS_OPENCV) $(LDFLAGS)
 
 # library: libkocr.la
