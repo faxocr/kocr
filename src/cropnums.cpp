@@ -128,6 +128,8 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
 	    continue;
 	}
     }
+    if (state == 0)
+	return NULL;
 
     *nextstart = x;
 
