@@ -61,8 +61,12 @@ findBB(IplImage * imgSrc)
 	    }
 	}
     }
-
-    rect = cvRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    if (minX == imgSrc->width && minY == imgSrc->height &&
+	maxX == 0 && maxY == 0) { /* when all white */
+	rect = cvRect(0, 0, imgSrc->width, imgSrc->height);
+    } else {
+	rect = cvRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
     return rect;
 }
 
