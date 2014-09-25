@@ -126,6 +126,7 @@ $ make install PREFIX=/usr
        /numbers 手書き0～9
        /09db	手書き0～9
        /mbsdb	手書○×△
+       /mbscdb	手書○×△✓
        /iddb
        /idocrdb
        /sample-ocrb	OCRBフォントファックスデータ
