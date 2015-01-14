@@ -12,6 +12,11 @@ generatedb:
 		cat ../mbsdb/list-mbs.lst >> list-mbsc.lst; )
 	./src/kocr images/mbscdb/list-mbsc.lst
 	cp -p images/mbscdb/list-mbsc.db databases
+	(cd images/mbsczdb; rm ./*.db ./*.xml ;\
+		ln -s ../mbscdb/*.png .; \
+		cat ../mbscdb/list-mbsc.lst >> list-mbscz.lst; )
+	./src/kocr images/mbsczdb/list-mbscz.lst
+	cp -p images/mbsczdb/list-mbscz.db databases
 	./src/kocr images/sample-ocrb/list-ocrb.lst
 	cp -p images/sample-ocrb/list-ocrb.db databases
 	(cd images/numocrb; rm ./*;\
@@ -28,6 +33,8 @@ generatedb:
 	cp -p images/mbsdb/list-mbs.xml databases
 	./src/kocr images/mbscdb/list-mbsc.lst
 	cp -p images/mbscdb/list-mbsc.xml databases
+	./src/kocr images/mbsczdb/list-mbscz.lst
+	cp -p images/mbsczdb/list-mbscz.xml databases
 	./src/kocr images/sample-ocrb/list-ocrb.lst
 	cp -p images/sample-ocrb/list-ocrb.xml databases
 	(cd images/numocrb; rm ./*.png ./*.db ./*.xml ./*.lst;\
