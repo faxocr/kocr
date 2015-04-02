@@ -14,7 +14,9 @@ generatedb:
 	cp -p images/mbscdb/list-mbsc.db databases
 	(cd images/mbsczdb; rm ./*.db ./*.xml ;\
 		ln -s ../mbscdb/*.png .; \
-		cat ../mbscdb/list-mbsc.lst >> list-mbscz.lst; )
+		cat ../mbscdb/list-mbsc.lst >> list-mbscz.lst; \
+		ln -s ../plus-minus/*.png .; \
+		cat ../plus-minus/list-plus-minus.lst >> list-mbscz.lst; )
 	./src/kocr images/mbsczdb/list-mbscz.lst
 	cp -p images/mbsczdb/list-mbscz.db databases
 	./src/kocr images/sample-ocrb/list-ocrb.lst
