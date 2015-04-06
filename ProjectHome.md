@@ -1,0 +1,1 @@
+kocr is a lightweight OCR module, which recognizes handwritten characters.
