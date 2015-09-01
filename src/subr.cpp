@@ -509,6 +509,7 @@ DIRP_Dist(DIRP(*A)[N][N], DIRP(*B)[N][N])
 /*===================================================================*
  * 特徴抽出ルーチン                                                  *
  *===================================================================*/
+
 void 
 Extract_Feature(char *fname, datafolder **retdf)
 {
@@ -713,6 +714,11 @@ Extract_Feature(char *fname, datafolder **retdf)
 					  dst_img_cc->depth, 
 					  dst_img_cc->nChannels);
     cvResize(cropped_margin, normalized, CV_INTER_NN);
+    cvNamedWindow("dst_img_cc");
+	cvShowImage("dst_img_cc", dst_img_cc);
+	cvWaitKey(50);
+	cvDestroyAllWindows();
+
 
     // 輪郭線抽出
     // XXX: カッコ悪いが，結果はGlobal変数で受け渡し
@@ -1135,6 +1141,387 @@ extract_feature2(IplImage * org_img, datafolder **retdf)
     cvReleaseImage(&dst_img_cc);
 
     return 0;
+}
+
+void 
+Extract_Feature3(char *fname, datafolder **retdf)
+{
+    IplConvKernel  *element;
+    int		    custom_shape[MASKSIZE * MASKSIZE];
+    int		    i     , j, cc, n, m, d;
+    LabelingBS	    labeling;
+    short	    contnum;
+    char           *ppp;
+	int				count_pix;
+
+    df.status = 0;
+    *retdf = &df;
+
+    IplImage *org_img = cvLoadImage(fname, CV_LOAD_IMAGE_ANYDEPTH |
+				    CV_LOAD_IMAGE_ANYCOLOR);
+    if (org_img == NULL) {
+	fprintf(stderr, "image file \"%s\": cannot be found.\n",
+		fname);
+	df.status = -1;
+	return;
+    }
+    // 処理後画像データの確保
+    IplImage *dst_img = cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
+    IplImage *dst_img_erode = cvCreateImage(cvGetSize(org_img),
+						   IPL_DEPTH_8U, 1);
+    IplImage *dst_img_dilate = cvCreateImage(cvGetSize(org_img),
+						   IPL_DEPTH_8U, 1);
+    IplImage *dst_img_cc = cvCreateImage(cvGetSize(org_img),
+					       IPL_DEPTH_8U, 1);
+
+    //グレースケール画像に変換
+    if ((ppp = strrchr(fname, '.')) > 0) {
+	//a dirty hack for monochrome pictures
+	if (strcmp(ppp, ".pbm") == 0) {
+	    dst_img = org_img;
+	} else if (strcmp(ppp, ".png") == 0) {
+	    cvCvtColor(org_img, dst_img, CV_BGR2GRAY);
+	} else if (strcmp(ppp, ".pgm") == 0) {
+	    dst_img = org_img;
+	} else {
+	    dst_img = org_img;
+	}
+    }
+    //cvThreshold(dst_img, ddst_img, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+	printf("%s ", fname);
+
+#ifdef PERIFERAL
+    int            *vproj, *hproj;
+    CvScalar	    pixel;
+
+    // 垂直射影を取る
+    vproj = (int *)malloc(sizeof(int) * dst_img->width);
+    for (x = 0; x < dst_img->width; x++)
+	vproj[x] = 0;
+    for (y = 0; y < dst_img->height; y++) {
+	for (x = 0; x < dst_img->width; x++) {
+	    pixel = cvGet2D(dst_img, y, x);
+	    if ((int)pixel.val[0] == 0)
+		vproj[x]++;
+	}
+    }
+    for (x = 0; x < dst_img->width; x++)
+	printf("%d ", vproj[x]);
+    free(vproj);
+#endif
+
+    //=====================================================
+    // 罫線除去処理
+    //=====================================================	
+    // ラベリング前の膨張処理
+    // 構造要素決定
+    memset(custom_shape, 0, sizeof(int) * MASKSIZE * MASKSIZE);
+    for (i = 0; i < MASKSIZE; i++) {
+	for (j = 0; j < MASKSIZE; j++) {
+	    custom_shape[j * MASKSIZE + i] = 1;
+	}
+    }
+
+    // ノイズ除去
+    element = cvCreateStructuringElementEx(MASKSIZE, MASKSIZE, MASKSIZE / 2,
+					       MASKSIZE / 2, CV_SHAPE_CUSTOM,
+					       custom_shape);
+    cvErode(dst_img, dst_img_erode, element, 1);
+    cvErode(dst_img_erode, dst_img_erode, element, 1);
+    cvErode(dst_img_erode, dst_img_erode, element, 1);
+    cvDilate(dst_img_erode, dst_img_dilate, element, 1);
+    cvDilate(dst_img_dilate, dst_img_dilate, element, 1);
+
+    // ラベリング処理用の配列に膨張後の画像をコピー
+    unsigned char  *src = new unsigned char[dst_img->height * dst_img->width];
+    for (i = 0; i < dst_img->width; i++) {
+		for (j = 0; j < dst_img->height; j++) {
+	    // labeling.hでは「0」以外を領域とするので、色の反転を
+			if (dst_img_dilate->imageData[j * dst_img->widthStep + i] == 0)
+			src[j * dst_img->width + i] = 255;
+		    else
+			src[j * dst_img->width + i] = 0;
+		}
+    }
+
+    // ラべリング実行　(Labeling.h)
+    short          *cc_result = new short[dst_img->height * dst_img->width];
+
+    // true: 領域の大きな順にソートする,しないならfalse
+    // 最後の「3」:領域検出の最小領域）
+    labeling.Exec(src, cc_result, dst_img->width, dst_img->height, true, 3);
+
+    RegionInfoBS   *ri;
+    int		    num_of_cc = labeling.GetNumOfResultRegions();
+    int		    size_x, size_y, top_x, top_y, bottom_x, bottom_y;
+    double	    aspect_ratio;
+
+    if (!num_of_cc) {
+	df.status = -1;
+	return;
+    }
+	printf("num_of_cc: %d, ", num_of_cc);
+    // CC画像生成
+    for (i = 0; i < dst_img->width; i++) {
+	for (j = 0; j < dst_img->height; j++) {
+	    dst_img_cc->imageData[dst_img_cc->widthStep * j + i] = 
+		(char)cc_result[j * dst_img_cc->width + i];
+	}
+    }
+
+
+    // ラベリング後，CCは大きい順に並んでいる
+    // そこで，「罫線らしくないCCのうちで最大サイズのCC」を文字として選択
+    for (cc = 0; cc < num_of_cc; cc++) {
+	ri = labeling.GetResultRegionInfo(cc);
+	ri->GetSize(size_x, size_y);
+	if (size_x > size_y)
+	    aspect_ratio = (double)size_x / (double)size_y;
+	else
+	    aspect_ratio = (double)size_y / (double)size_x;
+
+	// 罫線っぽい連結成分をスキップ
+	if (!((aspect_ratio > 10) && 
+	      (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
+		if (cc == 0 && (size_y == dst_img_dilate->height ||
+									size_x == dst_img_dilate->width)) {
+			printf("keisen, ");
+			count_pix = 0;
+
+			for (j = 0; j < dst_img_cc->height; j++) {
+				for (i = 0; i < dst_img_cc->width / 6; i++) {
+					if (cc_result[dst_img_cc->width * j + i] == cc + 1) {
+						cc_result[dst_img_cc->width * j + i] = 0;
+						count_pix++;
+					}
+				}
+			}
+				for (j = 0; j < dst_img_cc->height; j++) {
+					for (i = dst_img_cc->width - dst_img_cc->width / 6;
+							i < dst_img_cc->width; i++) {
+					if (cc_result[dst_img_cc->width * j + i] == cc + 1) {
+						cc_result[dst_img_cc->width * j + i] = 0;
+						count_pix++;
+					}
+				}
+			}
+			for (j = 0; j < dst_img_cc->height / 6; j++) {
+				for (i = 0; i < dst_img_cc->width; i++) {
+					if (cc_result[dst_img_cc->width * j + i] == cc + 1) {
+						cc_result[dst_img_cc->width * j + i] = 0;
+						count_pix++;
+					}
+				}
+			}
+
+			if (dst_img_dilate->height > dst_img_dilate->width) {
+				if (ri->GetNumOfPixels() - count_pix > dst_img_dilate->height) {
+					printf("unified, ");
+					count_pix = 0;
+					break;
+				}
+			} else {
+				if (ri->GetNumOfPixels() - count_pix > dst_img_dilate->width) {
+					printf("unified, ");
+					count_pix = 0;
+					break;
+				}
+			}
+			continue;
+		}
+	    break;
+	}
+    }
+    ri->GetMax(top_x, top_y);
+    ri->GetMin(bottom_x, bottom_y);
+
+    for (i = 0; i < dst_img_cc->width; i++) {
+	for (j = 0; j < dst_img_cc->height; j++) {
+	    if (cc_result[dst_img_cc->width * j + i] == (cc + 1)) {
+		dst_img_cc->imageData[dst_img_cc->widthStep * j + i] = 0;
+	    } else {
+		dst_img_cc->imageData[dst_img_cc->widthStep * j + i] = 
+		    (char)255; /* XXX */
+	    }
+	}
+    }
+
+    IplImage       *cropped
+    = cvCreateImage(cvSize(ABS(top_x - bottom_x) + 1,
+			   ABS(top_y - bottom_y) + 1),
+		    dst_img_cc->depth, dst_img_cc->nChannels);
+
+    // 本当は太らす前の dst_img なはずだが，dst_imgはノイズが多く，
+    // 太らした方が安定しているので dst_img_ccを利用
+    cvSetImageROI(dst_img_cc, cvRect(bottom_x, bottom_y,
+					 ABS(top_x - bottom_x) + 1,
+					 ABS(top_y - bottom_y) + 1));
+
+    // 文字部外接矩形の切り出し
+    cvCopy(dst_img_cc, cropped);
+    cvResetImageROI(dst_img_cc);
+
+    //==============================================================
+    // アスペクト比を維持したまま，マージンをつけて正方形画像に
+    int maxside = MAX((ABS(top_x - bottom_x) + 1), (ABS(top_y - bottom_y) + 1));
+    IplImage       *cropped_margin
+    = cvCreateImage(cvSize(maxside, maxside), 
+		    dst_img_cc->depth, dst_img_cc->nChannels);
+
+    // 白で初期化
+    for (i = 0; i < cropped_margin->width; i++) {
+	for (j = 0; j < cropped_margin->height; j++) {
+	    cropped_margin->imageData[cropped_margin->widthStep * j + i] =
+		(char)255; /* XXX */
+	}
+    }
+
+    if (maxside == (ABS(top_x - bottom_x) + 1)) {
+	int jstart = (cropped_margin->height - (ABS(top_y - bottom_y) + 1)) / 2;
+	int jend = (cropped_margin->height + (ABS(top_y - bottom_y) + 1)) / 2;
+	for (i = 0; i < cropped_margin->width; i++) {
+	    for (j = jstart; j < jend; j++) {
+		cropped_margin->imageData[cropped_margin->widthStep * j + i]
+		    = cropped->imageData[cropped->widthStep * (j - jstart) + i];
+	    }
+	}
+    } else {
+	int istart = (cropped_margin->width - (ABS(top_x - bottom_x) + 1)) / 2;
+	int iend = (cropped_margin->width + (ABS(top_x - bottom_x) + 1)) / 2;
+	for (i = istart; i < iend; i++) {
+	    for (j = 0; j < cropped_margin->height; j++) {
+		cropped_margin->imageData[cropped_margin->widthStep * j + i]
+		    = cropped->imageData[cropped->widthStep * j + (i - istart)];
+	    }
+	}
+    }
+
+    // 64x64の大きさに正規化
+    IplImage * normalized = cvCreateImage(cvSize(64, 64), 
+					  dst_img_cc->depth, 
+					  dst_img_cc->nChannels);
+    cvResize(cropped_margin, normalized, CV_INTER_NN);
+
+
+    // 輪郭線抽出
+    // XXX: カッコ悪いが，結果はGlobal変数で受け渡し
+    contnum = Contour_Detect(normalized);
+    Contour_To_Directional_Pattern(contnum);
+    // 結果はCont[],contnumに入っているので、この領域をfreeする
+    for (int i = 0; i< contnum; i++ ) {
+      if (Cont[i] != NULL) free(Cont[i]);
+    }
+
+    // ボカシ処理
+    // XXX: カッコ悪いが，結果はGlobal変数で受け渡し
+    Blurring();
+
+    // 方向ヒストグラムの正準化
+    // XXX: カッコ悪いが，結果はGlobal変数で受け渡し
+    Equalize_Directional_Pattern();
+
+    // 輝度画像についても縮小＆ぼかし
+    Make_Intensity(normalized);
+    Blur_Intensity();
+
+#ifdef DISPLAY_IMAGES
+    IplImage *dir_image = cvCreateImage(cvSize(4 * N, N), normalized->depth, normalized->nChannels);
+    IplImage *bdir_image = cvCreateImage(cvSize(4 * N, N), normalized->depth, normalized->nChannels);
+    IplImage *final_image = cvCreateImage(cvSize(4 * N, N), normalized->depth, normalized->nChannels);
+    IplImage *contour_image = cvCreateImage(cvSize(64, 64), normalized->depth, normalized->nChannels);
+
+    /* XXXX char に255をキャストするのっておかしくね？ */
+    for (i = 0; i < N; i++) {
+	for (j = 0; j < N; j++) {
+	    dir_image->imageData[dir_image->widthStep * j + i] =
+		(char)(DirPat[0][i][j] * 50 > 255 ? 255 : DirPat[0][i][j] * 50);
+
+	    dir_image->imageData[dir_image->widthStep * j + i + N] =
+		(char)(DirPat[1][i][j] * 50 > 255 ? 255 : DirPat[1][i][j] * 50);
+
+	    dir_image->imageData[dir_image->widthStep * j + i + 2 * N] =
+		(char)(DirPat[2][i][j] * 50 > 255 ? 255 : DirPat[2][i][j] * 50);
+
+	    dir_image->imageData[dir_image->widthStep * j + i + 3 * N] =
+		(char)(DirPat[3][i][j] * 50 > 255 ? 255 : DirPat[3][i][j] * 50);
+
+	    bdir_image->imageData[bdir_image->widthStep * j + i] =
+		(char)(Blur[0][i][j] * 10 > 255 ? 255 : Blur[0][i][j] * 10);
+
+	    bdir_image->imageData[bdir_image->widthStep * j + i + N] =
+		(char)(Blur[1][i][j] * 10 > 255 ? 255 : Blur[1][i][j] * 10);
+
+	    bdir_image->imageData[bdir_image->widthStep * j + i + 2 * N] =
+		(char)(Blur[2][i][j] * 10 > 255 ? 255 : Blur[2][i][j] * 10);
+
+	    bdir_image->imageData[bdir_image->widthStep * j + i + 3 * N] =
+		(char)(Blur[3][i][j] * 10 > 255 ? 255 : Blur[3][i][j] * 10);
+
+	    final_image->imageData[final_image->widthStep * j + i] =
+		(char)(Data[i][j].d[0] > 255 ? 255 : Data[i][j].d[0]);
+
+	    final_image->imageData[final_image->widthStep * j + i + N] =
+		(char)(Data[i][j].d[1] > 255 ? 255 : Data[i][j].d[1]);
+
+	    final_image->imageData[final_image->widthStep * j + i + 2 * N] =
+		(char)(Data[i][j].d[2] > 255 ? 255 : Data[i][j].d[2]);
+
+	    final_image->imageData[final_image->widthStep * j + i + 3 * N] =
+		(char)(Data[i][j].d[3] > 255 ? 255 : Data[i][j].d[3]);
+	}
+    }
+    for (i = 0; i < 64; i++)
+	for (j = 0; j < 64; j++)
+	    contour_image->imageData[contour_image->widthStep * j + i] =
+		(char)(ContImg[i][j] > 0 ? 255 : 0);
+
+    //画像の表示
+    cvNamedWindow("org_img");
+    cvNamedWindow("dst_img_dilate");
+    cvNamedWindow("dst_img_cc");
+    cvNamedWindow("cropped");
+    cvShowImage("cropped", cropped);
+    cvNamedWindow("contour_image");
+    cvShowImage("contour_image", contour_image);
+    cvNamedWindow("dir_image");
+    cvShowImage("dir_image", dir_image);
+    cvNamedWindow("bdir_image");
+    cvShowImage("bdir_image", bdir_image);
+    cvNamedWindow("final_image");
+    cvShowImage("final_image", final_image);
+    cvNamedWindow("cropped_margin");
+    cvShowImage("cropped_margin", cropped_margin);
+    cvNamedWindow("normalized");
+    cvShowImage("normalized", normalized);
+    cvShowImage("org_img", org_img);
+    cvShowImage("dst_img_dilate", dst_img_dilate);
+    cvShowImage("dst_img_cc", dst_img_cc);
+
+    cvWaitKey(10);
+
+    //全てのウィンドウの削除
+    cvDestroyAllWindows();
+
+    //画像データの解放
+    cvReleaseImage(&dir_image);
+    cvReleaseImage(&bdir_image);
+    cvReleaseImage(&final_image);
+    cvReleaseImage(&contour_image);
+#endif
+
+    //画像データの解放
+    cvReleaseImage(&cropped);
+    cvReleaseImage(&cropped_margin);
+    cvReleaseImage(&normalized);
+    if (dst_img == org_img) {
+	//a dirty hack for mono
+	    cvReleaseImage(&org_img);
+    } else {
+	cvReleaseImage(&org_img);
+	cvReleaseImage(&dst_img);
+    }
+    cvReleaseImage(&dst_img_dilate);
+    cvReleaseImage(&dst_img_cc);
 }
 
 int 

@@ -644,7 +644,11 @@ recognize(feature_db *db, char *file_name)
     //
     // 特徴抽出
     //
-    Extract_Feature(file_name, &df);
+#ifdef USE_FILTER
+	Extract_Feature_Wrapper(file_name, &df);
+#else
+    Extract_Feature3(file_name, &df);
+#endif
     if (df->status) {
 	// 特徴抽出失敗で真
 	return 0;
@@ -796,6 +800,7 @@ recognize_multi(feature_db *db, char *file_name)
 
     double	    total = 0;
 
+	printf("recognize_multi\n");
     // 元画像を読み込む
     src_img = cvLoadImage(file_name,
 			   CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
