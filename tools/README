@@ -1,0 +1,15 @@
+#
+# README
+#
+
+ * 使い方
+
+./test-ocr.pl [target_file(s)]
+
+ * 注意
+
+ - $KOCR_PATH、$DB_PATHを、正しく設定してください
+ - $KOCR_PATHは、開発中のkocrバイナリを正しく指すこと
+ - $DB_PATHは、開発中のkocrで生成したデータベースを指すこと
+ - 上記が正しくまもられていないと、評価を誤る可能性があります
+
