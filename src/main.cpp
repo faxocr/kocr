@@ -27,6 +27,7 @@
  */
 
 #define _WITH_GETLINE
+#define _KOCR_MAIN
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,13 +45,13 @@
 #ifdef USE_SVM
 #include <opencv/ml.h>
 #endif
+
 #include "kocr.h"
 #include "subr.h"
 #include "cropnums.h"
 #include "Labeling.h"
 
 #define ERR_DIR "../images/error"
-
 #define MAXSTRLEN 1024
 
 /* ============================================================
@@ -116,19 +117,12 @@ main(int argc, char *argv[])
 
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
 
-#if XML_TEST
-	// Database generation
-	db_name = conv_fname(argv[1], ".xml");
-	training(argv[1], db_name);
-#else
 	// Database generation
 	svm = training(argv[1]);
 	if (!svm)
 	    exit(-1);
 	db_name = conv_fname(argv[1], ".xml");
 	svm->save(db_name);
-#endif
-
 	exit(0);
     }
 #else
@@ -180,6 +174,9 @@ main(int argc, char *argv[])
 
 	// Character recognition
 	resultstr = kocr_recognize_image(svm, argv[2]);
+	if (!resultstr)
+	    exit(-1);
+
 	printf("Result: %s\n", resultstr);
 	free(resultstr);
 

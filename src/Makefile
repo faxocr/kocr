@@ -9,12 +9,13 @@
 PREFIX         = /usr/local
 
 OBJS           = main.o
-LIB_OBJS       = kocr.o subr.o cropnums.o
+LIB_OBJS       = kocr.o subr.o cropnums.o thinning.o
 TARGET         = kocr
 CFLAGS_OPENCV  = `pkg-config --cflags opencv`
 LDFLAGS_OPENCV = `pkg-config --libs opencv`
 
-CFLAGS		= -O3 -DUSE_SVM -DLIBRARY
+#CFLAGS		= -O3 -DUSE_SVM
+CFLAGS		= -O3 -DUSE_SVM -DTHINNING
 # CFLAGS	= -g -DUSE_SVM
 # CFLAGS	= -O3
 # CFLAGS	= -g
@@ -23,6 +24,10 @@ CFLAGS		= -O3 -DUSE_SVM -DLIBRARY
 # all: $(TARGET) library static
 
 all: $(TARGET)
+
+thin:
+	libtool --mode=compile $(CXX) -DTHINNING_MAIN -c $(CFLAGS) $(CFLAGS_OPENCV) thinning.cpp
+	libtool --mode=link $(CXX) -o thin thinning.o $(LDFLAGS_OPENCV) $(LDFLAGS)
 
 install: all
 	-(for dir in bin include lib share/kocr/databases; do mkdir -p $(PREFIX)/$$dir; done)
@@ -66,4 +71,4 @@ main.o: main.cpp kocr.h
 	libtool --mode=compile $(CXX) -c $(CFLAGS) $(CFLAGS_OPENCV) $<
 
 clean:
-	libtool --mode=clean rm -f $(TARGET) kocr-static libkocr.la libkocr.a $(OBJS) $(LIB_OBJS:.o=.lo)
+	libtool --mode=clean rm -f $(TARGET) kocr-static libkocr.la libkocr.a thin $(OBJS) $(LIB_OBJS:.o=.lo)

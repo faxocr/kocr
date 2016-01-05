@@ -39,9 +39,8 @@ int     Compare(const void *, const void *);
 void	Make_Intensity(IplImage *);
 void	Blur_Intensity();
 double  DIRP_Dist(DIRP (*)[N][N], DIRP (*)[N][N]);
-void	Extract_Feature(char *, datafolder **);
-void	Extract_Feature3(char *, datafolder **);
-int	extract_feature2(IplImage *, datafolder **);
+int	extract_feature(IplImage *, datafolder **);
+void	extract_feature_wrapper(char *, datafolder **);
 int	db_save(char *, feature_db *);
 
 #ifdef __cplusplus

@@ -27,6 +27,7 @@
  */
 
 #define _WITH_GETLINE
+#define _KOCR_MAIN
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,9 +49,8 @@
 #include "Labeling.h"
 
 #define ERR_DIR "../images/error"
-
+#define OPENCVXML "<opencv_storage>\n"
 #define MAXSTRLEN 1024
-
 #define THRES_RATIO 2 // 画像の縦横比がコレを超えると、切り出し処理へ
 
 /*
@@ -80,9 +80,8 @@ static void average(feature_db * db, char *lst_name);
  * 水上,古賀."線素方向特徴量を用いた変位抽出を行なう
  * 手書き漢字認識システム", PRMU96-188
  *
- *
- * ETL8bの1600枚(一文字あたり160パターン)の奇数シートのうち  
- * 最初のものを使って標準パターンを作成する    
+ * ETL8bの1600枚(一文字あたり160パターン)の奇数シートのうち
+ * 最初のものを使って標準パターンを作成する
  *
  * 生成手順は次の通り
  *
@@ -122,13 +121,8 @@ static void average(feature_db * db, char *lst_name);
  */
 
 #ifdef USE_SVM
-#if XML_TEST
-void *
-training(char *list_file, char *tgt_file)
-#else
 CvSVM *
 training(char *list_file)
-#endif
 #else
 feature_db *
 training(char *list_file)
@@ -140,13 +134,17 @@ training(char *list_file)
     int		    num_of_char = 0; // 画像数
     char	    line_buf[300];
     FILE           *listfile;
-    short	    contnum; // 使ってない
     LabelingBS	    labeling; // 使ってない
     char           *class_data; // データベース上の保存場所（ポインタ）
     char           *target_dir;
     DIRP           ***char_data; // 画像ごとに、16*16のbyte領域を確保
     char           *Class; // Class[num_of_char]:画像のクラスを保存
     datafolder     *df; // 特徴量保存領域
+
+#ifdef THINNING
+    int features[N][N][ANGLES];
+    // int features[N][N];
+#endif
 
 #ifdef USE_SVM
     CvSVM svm, *svm_;
@@ -208,13 +206,23 @@ training(char *list_file)
     // 全文字データ格納領域確保
     Class = (char *)malloc(sizeof(char) * num_of_char);
     // char_data[num_of_char(画像数)][Y_SIZE(16)][X_SIZE(16)](Nはピクセル数)
+
     char_data = (DIRP ***) malloc(sizeof(DIRP **) * num_of_char);
+#ifdef THINNING
+    for (n = 0; n < num_of_char; n++) {
+	char_data[n] = (DIRP **) malloc(sizeof(DIRP *) * N);
+	for (i = 0; i < X_SIZE; i++) {
+	    char_data[n][i] = (DIRP *) malloc(sizeof(DIRP) * N);
+	}
+    }
+#else
     for (n = 0; n < num_of_char; n++) {
 	char_data[n] = (DIRP **) malloc(sizeof(DIRP *) * Y_SIZE);
 	for (i = 0; i < X_SIZE; i++) {
 	    char_data[n][i] = (DIRP *) malloc(sizeof(DIRP) * X_SIZE);
 	}
     }
+#endif
 
     //
     // 全文字画像データの読込
@@ -255,8 +263,23 @@ training(char *list_file)
     		continue;
     	}
 
-    	// XXX: グローバル変数渡しを修正し、エラーチェックを入れる
-    	Extract_Feature(char_file_name, &df);
+#ifdef THINNING
+    	Extract_Feature_wrapper(char_file_name, features);
+    	for (i = 0; i < N; i++) {
+	  // printf("%3d ", i);
+    		for (j = 0; j < N; j++) {
+		  // char_data[n][j][i].d[0] = (uchar) features[j][i];
+		  // printf("%3d,", char_data[n][j][i].d[0]);
+    			for (d = 0; d < ANGLES; d++) {
+    				char_data[n][j][i].d[d] = features[j][i][d];
+				// printf("[%d]", char_data[i][k][j].d[d]);
+    			}
+    			char_data[n][j][i].I = 0;
+    		}
+		// printf("\n");
+    	}
+#else
+    	extract_feature_wrapper(char_file_name, &df);
 	// subr.cpp内で宣言 (特徴量をdfに保存)
 	// Extract_Feature内のMake_Intensityでdf->Data[][].I,
 	// Equalize_Directional_Patternでdf->Data[][].d[]を書き換えている
@@ -265,6 +288,7 @@ training(char *list_file)
     		n++;
     		continue;
     	}
+
 	//char_dataに保存
     	for (i = 0; i < Y_SIZE; i++) {
     		for (j = 0; j < X_SIZE; j++) {
@@ -274,6 +298,7 @@ training(char *list_file)
     			char_data[n][i][j].I = df->Data[i][j].I;
     		}
     	}
+#endif
 
     	n++;
     }
@@ -347,12 +372,26 @@ training(char *list_file)
     //
     printf("preparing the SVM module...\n");
 
-    CvMat *Iluminosity = cvCreateMat(db->nitems, Y_SIZE * X_SIZE, CV_32FC1);
+#ifdef THINNING
+    // 必要なのはCV_8UC1だが、CvSVMのバグで、CV_32FC1にする必要がある
+    CvMat *Direction = cvCreateMat(db->nitems, N * N * ANGLES, CV_32FC1);
+#else
     CvMat *Direction = cvCreateMat(db->nitems, Y_SIZE * X_SIZE * 4, CV_32FC1);
+    CvMat *Iluminosity = cvCreateMat(db->nitems, Y_SIZE * X_SIZE, CV_32FC1);
+#endif
     CvMat *Classlabel = cvCreateMat(db->nitems, 1, CV_32FC1);
 
     for (i = 0; i < db->nitems; ++i) {
     	cvmSet(Classlabel, i, 0, (float) class_data[i]);
+#ifdef THINNING
+     	for (j = 0; j < N; ++j) {
+		for (k = 0; k < N; ++k) {
+     			for (int kk = 0; kk < ANGLES; ++kk) {
+				cvmSet(Direction,
+				       i, j * N * ANGLES + k * ANGLES + kk,
+				       char_data[i][k][j].d[kk]);
+     			}
+#else
      	for (j = 0; j < Y_SIZE; ++j) {
 		for (k = 0; k < X_SIZE; ++k) {
      			cvmSet(Iluminosity,
@@ -365,6 +404,7 @@ training(char *list_file)
 				       j * Y_SIZE * 4 + k * 4 + kk,
 				       (float) feature_data[i][j][k].d[kk]);
      			}
+#endif
      		}
      	}
      }
@@ -373,25 +413,12 @@ training(char *list_file)
 
     param.svm_type = CvSVM::C_SVC;
     param.kernel_type = CvSVM::LINEAR;
+    // param.kernel_type = CvSVM::RBF;
     param.term_crit = criteria;
 
     printf("training the SVM...\n");
 
-    // svm.train(Iluminosity,Classlabel,NULL,NULL,param);
-    // svm.save("SVM_Iluminosity.xml");
-
     try {
-#if XML_TEST
-      svm.train_auto(Direction, Classlabel, NULL, NULL, param,
-		     50,
-		     svm.get_default_grid(CvSVM::C),
-		     svm.get_default_grid(CvSVM::GAMMA),
-		     svm.get_default_grid(CvSVM::P),
-		     svm.get_default_grid(CvSVM::NU),
-		     svm.get_default_grid(CvSVM::COEF),
-		     svm.get_default_grid(CvSVM::DEGREE));
-      svm.save(tgt_file);
-#else
       svm_ = new CvSVM();
       svm_->train_auto(Direction, Classlabel, NULL, NULL, param,
 		       50,
@@ -401,14 +428,13 @@ training(char *list_file)
 		       svm.get_default_grid(CvSVM::NU),
 		       svm.get_default_grid(CvSVM::COEF),
 		       svm.get_default_grid(CvSVM::DEGREE));
-#endif
     } catch (cv::Exception &e) {
       const char* err_msg = e.what();
       printf("%s\n", err_msg);
     }
 
     free(db);
-#endif
+#endif /* USE_SVM */
 
     /*
      * mallocした領域を解放する
@@ -426,11 +452,7 @@ training(char *list_file)
     free(Class);
 
 #ifdef USE_SVM
-#if XML_TEST
-    return NULL;
-#else
     return svm_;
-#endif
 #else
     return db;
 #endif
@@ -472,8 +494,6 @@ leave_one_out_test(feature_db * db)
     //printf("starting leave-one-out testing...\n");
     
 #ifdef USE_SVM
-    //CvMat *Direction=cvCreateMat(db->nitems - 1, Y_SIZE * X_SIZE * 4, CV_32FC1);
-    //CvMat *Classlabel=cvCreateMat(db->nitems - 1, 1, CV_32FC1);
     cv::Mat Direction;
     Direction.create(db->nitems-1,Y_SIZE*X_SIZE*4,CV_32FC1);
     cv::Mat Classlabel;
@@ -484,10 +504,6 @@ leave_one_out_test(feature_db * db)
     CvSVMParams param;
     char response;
     CvTermCriteria criteria;
-
-    // criteria = cvTermCriteria (CV_TERMCRIT_EPS, 1000, FLT_EPSILON);
-    // param = CvSVMParams(CvSVM::C_SVC, CvSVM::LINEAR,
-    //                     10.0, 8.0, 1.0, 10.0, 0.5, 1.0, NULL, criteria);
 
     svm_.load(svm_data);
     param = svm_.get_params();
@@ -634,25 +650,39 @@ recognize(feature_db *db, char *file_name)
     int		    i, j, d;
     char	    result [2];
 
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
     char           *class_data;
+    double	    total = 0;
     DIRP	    target_data[Y_SIZE][X_SIZE];
 
-    double	    total = 0;
+#ifdef THINNING
+    int features[N][N][ANGLES];
+
+    if (Extract_Feature_wrapper(file_name, features))
+        return 0;
+
+    CvMat *feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
+    for (i = 0; i < N; i++) {
+      for (j = 0; j < N; j++) {
+	for (int k = 0; k < ANGLES; k++) {
+	  cvmSet(feature_mat, 0, i * N * ANGLES + j * ANGLES + k,
+		 features[j][i][k]);
+	}
+      }
+    }
+
+#else
+    DIRP(*feature_data)[Y_SIZE][X_SIZE];
     datafolder      *df;
-	
+
     //
     // 特徴抽出
     //
-#ifdef USE_FILTER
-	Extract_Feature_Wrapper(file_name, &df);
-#else
-    Extract_Feature3(file_name, &df);
-#endif
+    extract_feature_wrapper(file_name, &df);
     if (df->status) {
 	// 特徴抽出失敗で真
 	return 0;
     }
+
     for (i = 0; i < Y_SIZE; i++) {
     	for (j = 0; j < X_SIZE; j++) {
     		for (d = 0; d < 4; d++) {
@@ -661,60 +691,13 @@ recognize(feature_db *db, char *file_name)
     		target_data[i][j].I = df->Data[i][j].I;
     	}
     }
+#endif
 
 #ifdef USE_SVM
-    /*
-    CvSVM svm;
-    if (class_data[0] == '0')
-      svm.load("../database/list-num.xml");
-    else if (class_data[0] == 'b')
-      svm.load("../database/list-mbs.xml");
-    else {
-      CvMat *Iluminosity = cvCreateMat(db->nitems, Y_SIZE * X_SIZE, CV_32FC1);
-      CvMat *Direction = cvCreateMat(db->nitems, Y_SIZE * X_SIZE*4, CV_32FC1);
-      CvMat *Classlabel = cvCreateMat(db->nitems, 1, CV_32FC1);
-      int k;
-      for (i = 0; i < db->nitems; ++i) {
-	cvmSet(Classlabel, i, 0, (float) class_data[i]);
-	for (j = 0; j < Y_SIZE; ++j) {
-	  for( k = 0; k < X_SIZE; ++k) {
-	    cvmSet(Iluminosity, i, j * X_SIZE + k,
-		   (float) (feature_data[i][j][k].I));
-	    for (int kk = 0; kk < 4; ++kk) {
-	      cvmSet(Direction, i, j * X_SIZE * 4 + k * 4 + kk,
-		     (float) feature_data[i][j][k].d[kk]);
-	    }
-	  }
-	}
-      }
 
-      CvSVMParams param;
-      CvTermCriteria criteria;
-      criteria = cvTermCriteria (CV_TERMCRIT_EPS, 1000, FLT_EPSILON);
-      param.svm_type = CvSVM::C_SVC;
-      param.kernel_type = CvSVM::LINEAR;
-      param.term_crit = criteria;
-
-      // printf("training\n");
-      svm.train_auto(Direction,
-		     Classlabel,
-		     NULL,
-		     NULL,
-		     param,
-		     10,
-		     svm.get_default_grid(CvSVM::C),
-		     svm.get_default_grid(CvSVM::GAMMA),
-		     svm.get_default_grid(CvSVM::P),
-		     svm.get_default_grid(CvSVM::NU),
-		     svm.get_default_grid(CvSVM::COEF),
-		     svm.get_default_grid(CvSVM::DEGREE));
-      // printf("end train\n");
-      // svm.train(Direction,Classlabel,NULL,NULL,param);
-    }
-
-    printf("Using SVM...\n");
-    */
-
+#ifdef THINNING
+    char response = (char) db->predict(feature_mat);
+#else
     /* data packing and recognization */
     int kk;
     char response;
@@ -729,6 +712,7 @@ recognize(feature_db *db, char *file_name)
       }
     }
     response = (char) db->predict(Inputdata);
+#endif
 
 #ifndef LIBRARY
     printf("Recogized: %c\n", response);
@@ -800,10 +784,11 @@ recognize_multi(feature_db *db, char *file_name)
 
     double	    total = 0;
 
-	printf("recognize_multi\n");
+    printf("recognize_multi\n");
+
     // 元画像を読み込む
     src_img = cvLoadImage(file_name,
-			   CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     if (src_img == NULL)
 	return NULL;
 
@@ -843,7 +828,24 @@ recognize_multi(feature_db *db, char *file_name)
 	//
 	// 特徴抽出
 	//
-	if (extract_feature2(part_img, &df) == -1) {
+
+#ifdef THINNING
+	int features[N][N][ANGLES];
+
+	if (Extract_Feature(cv::cvarrToMat(part_img, true), features))
+	  return 0;
+
+	CvMat *feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
+	for (i = 0; i < N; i++) {
+	  for (j = 0; j < N; j++) {
+	    for (int k = 0; k < ANGLES; k++) {
+	      cvmSet(feature_mat, 0, i * N * ANGLES + j * ANGLES + k,
+		     features[j][i][k]);
+	    }
+	  }
+	}
+#else
+	if (extract_feature(part_img, &df) == -1) {
 	    free(result_str);
 	    return NULL;
 	}
@@ -860,8 +862,13 @@ recognize_multi(feature_db *db, char *file_name)
 		target_data[i][j].I = df->Data[i][j].I;
 	    }
 	}
+#endif
 
 #ifdef USE_SVM
+
+#ifdef THINNING
+	result_char = (char) db->predict(feature_mat);
+#else
 	/* data packing and recognization */
 	int kk;
 	char response;
@@ -875,14 +882,16 @@ recognize_multi(feature_db *db, char *file_name)
 	    }
 	  }
 	}
-
 	result_char = (char) db->predict(Inputdata);
+#endif
+
 	*(result_str + seq_num) = result_char;
 	*(result_str + seq_num + 1) = 0;
 
 #ifndef LIBRARY
 	printf("Recogized: %c\n", result_char);
 #endif
+
 #else
 	//
 	// データベース利用前処理
@@ -919,7 +928,8 @@ recognize_multi(feature_db *db, char *file_name)
 	       class_data[min_char_data], min_dist);
 	printf("Credibility score %2.2f\n", 1 - n * min_dist / total);
 #endif
-#endif //???
+
+#endif /* USE_SVM */
 
 	start_x = next_start;
 	seq_num++;
@@ -944,6 +954,15 @@ recog_image(feature_db *db, char *file_name)
     // 元画像を読み込む
     src_img = cvLoadImage(file_name,
 			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+
+    if (!src_img) {
+      char *p = file_name;
+      for ( ; *p; ++p) *p = tolower(*p);
+      if (strstr(file_name, ".gif")) {
+	printf("This program doesn't support GIF images.\n");
+      }
+      return NULL;
+    }
 
     if (src_img->width / src_img->height > THRES_RATIO)
 	result = recognize_multi(db, file_name);
@@ -1029,6 +1048,7 @@ exclude(feature_db * db, char *lst_name)
     if (db->magic != MAGIC_NO) {
 	return;
     }
+
     nitems = db->nitems;
     feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
     class_data = (char *)db + db->class_offset;
@@ -1228,7 +1248,6 @@ is_database(const char *file_name)
     return magic == MAGIC_NO ? TRUE : FALSE;
 }
 
-#define OPENCVXML "<opencv_storage>\n"
 int 
 is_opencvxml(const char *file_name)
 {
@@ -1264,21 +1283,24 @@ is_opencvxml(const char *file_name)
 void
 kocr_exclude(feature_db *db, char *lst_name)
 {
-    if (db == NULL || lst_name == NULL) return;
+    if (db == NULL || lst_name == NULL)
+      return;
     exclude(db,lst_name);
 }
 
 void
 kocr_distance(feature_db *db, char *lst_name)
 {
-    if (db == NULL || lst_name == NULL) return;
+    if (db == NULL || lst_name == NULL)
+      return;
     distance(db, lst_name);
 }
 
 void
 kocr_average(feature_db *db, char *lst_name)
 {
-    if (db == NULL || lst_name == NULL) return;
+    if (db == NULL || lst_name == NULL)
+      return;
     average(db, lst_name);
 }
 
@@ -1313,7 +1335,8 @@ char *
 kocr_recognize_image(feature_db *db, char *file_name)
 #endif
 {
-    if (db == NULL || file_name == NULL) return NULL;
+    if (db == NULL || file_name == NULL)
+      return NULL;
     return recog_image(db, file_name);
 }
 
