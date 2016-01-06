@@ -5,7 +5,7 @@ use utf8;
 my $count = 0;
 my $success = 0;
 my $KOCR_PATH = "./src/kocr";
-my $DB_PATH = "./src/list-num-new.xml";
+my $DB_PATH = "./src/list-num.xml";
 
 my %error_hash;
 my %n_sample;
