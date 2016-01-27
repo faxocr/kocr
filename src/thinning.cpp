@@ -578,11 +578,12 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
      */
     if (img_src.channels() > 1) {
       cv::cvtColor(img_src, img_bw, CV_BGR2GRAY);
+      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
+      // cv::threshold(img_bw, img_bw, 254, 255, CV_THRESH_BINARY);
       img_bw =~ img_bw;
-      cv::threshold(img_bw, img_bw, 32, 255, CV_THRESH_BINARY);
     } else {
+      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
       img_bw =~ img_src;
-      cv::threshold(img_bw, img_bw, 32, 255, CV_THRESH_BINARY);
     }
 
     /*
