@@ -57,9 +57,9 @@
  * static functions
  */
 #ifdef USE_SVM
-static char *recog_image(CvSVM *, char *);
+static char *recog_image(CvSVM *, IplImage *);
 #else
-static char *recog_image(feature_db *, char *);
+static char *recog_image(feature_db *, IplImage *);
 #endif
 
 static void exclude(feature_db * db, char *lst_name);
@@ -639,9 +639,9 @@ leave_one_out_test(feature_db * db)
  * ============================================================ */
 char *
 #ifdef USE_SVM
-recognize(CvSVM *db, char *file_name)
+recognize(CvSVM *db, IplImage *src_img)
 #else
-recognize(feature_db *db, char *file_name)
+recognize(feature_db *db,  IplImage *src_img)
 #endif
 {
     double	    min_dist, dist;
@@ -657,8 +657,8 @@ recognize(feature_db *db, char *file_name)
 #ifdef THINNING
     int features[N][N][ANGLES];
 
-    if (Extract_Feature_wrapper(file_name, features))
-        return 0;
+    if (Extract_Feature(cv::cvarrToMat(src_img, true), features))
+	  return 0;
 
     CvMat *feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
     for (i = 0; i < N; i++) {
@@ -677,7 +677,7 @@ recognize(feature_db *db, char *file_name)
     //
     // 特徴抽出
     //
-    extract_feature_wrapper(file_name, &df);
+    extract_feature(src_img, &df);
     if (df->status) {
 	// 特徴抽出失敗で真
 	return 0;
@@ -762,16 +762,16 @@ recognize(feature_db *db, char *file_name)
 
 char *
 #ifdef USE_SVM
-recognize_multi(CvSVM *db, char *file_name)
+recognize_multi(CvSVM *db, IplImage *src_img)
 #else
-recognize_multi(feature_db *db, char *file_name)
+recognize_multi(feature_db *db, IplImage *src_img)
 #endif
 {
     double	    min_dist, dist;
     int		    min_char_data;
     int		    n, nitems;
     int		    i, j, d;
-    IplImage       *src_img = NULL, *dst_img = NULL;
+    IplImage       *dst_img = NULL;
     CvRect	    bb;
     IplImage       *part_img, *body;
     int		    seq_num, start_x, width, next_start;
@@ -784,11 +784,6 @@ recognize_multi(feature_db *db, char *file_name)
 
     double	    total = 0;
 
-    printf("recognize_multi\n");
-
-    // 元画像を読み込む
-    src_img = cvLoadImage(file_name,
-			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     if (src_img == NULL)
 	return NULL;
 
@@ -943,33 +938,19 @@ recognize_multi(feature_db *db, char *file_name)
 
 #ifdef USE_SVM
 static char *
-recog_image(CvSVM *db, char *file_name)
+recog_image(CvSVM *db, IplImage *src_img)
 #else
 static char *
-recog_image(feature_db *db, char *file_name)
+recog_image(feature_db *db, IplImage *src_img)
 #endif
 {
-    IplImage       *src_img;
     char           *result;
-    // 元画像を読み込む
-    src_img = cvLoadImage(file_name,
-			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-
-    if (!src_img) {
-      char *p = file_name;
-      for ( ; *p; ++p) *p = tolower(*p);
-      if (strstr(file_name, ".gif")) {
-	printf("This program doesn't support GIF images.\n");
-      }
-      return NULL;
-    }
 
     if (src_img->width / src_img->height > THRES_RATIO)
-	result = recognize_multi(db, file_name);
+	result = recognize_multi(db, src_img);
     else
-	result = recognize(db, file_name);
+	result = recognize(db, src_img);
 
-    cvReleaseImage(&src_img);
     return result;
 #undef THRES_RATIO
 }
@@ -1329,15 +1310,55 @@ kocr_init(char *filename)
 
 #ifdef USE_SVM
 char *
+kocr_recognize_Image(CvSVM *db, IplImage *src_img)
+#else
+char *
+kocr_recognize_Image(feature_db *db, IplImage *src_img)
+#endif
+{
+    if (db == NULL || src_img == NULL)
+      return NULL;
+
+    return recog_image(db, src_img);
+}
+
+#ifdef USE_SVM
+char *
 kocr_recognize_image(CvSVM *db, char *file_name)
 #else
 char *
 kocr_recognize_image(feature_db *db, char *file_name)
 #endif
 {
+    IplImage       *src_img;
+    char *c;
+
     if (db == NULL || file_name == NULL)
       return NULL;
-    return recog_image(db, file_name);
+
+    // 元画像を読み込む
+#if 0
+    src_img = cvLoadImage(file_name,
+			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+#else
+    src_img = cvLoadImage(file_name,
+			  CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
+#endif
+
+    // OpenCVはGIFを扱えないらしい
+    if (!src_img) {
+      char *p = file_name;
+      for (; *p; ++p) *p = tolower(*p);
+      if (strstr(file_name, ".gif")) {
+	printf("This program doesn't support GIF images.\n");
+      }
+      return NULL;
+    }
+
+    c = recog_image(db, src_img);
+    cvReleaseImage(&src_img);
+
+    return c;
 }
 
 #ifdef USE_SVM

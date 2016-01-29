@@ -111,15 +111,15 @@ typedef struct
 extern "C" {
 #endif
 #ifdef USE_SVM
-	_EX_DECL char *recognize(CvSVM *, char *);
+	_EX_DECL char *recognize(CvSVM *, IplImage *);
 #else
-	_EX_DECL char *recognize(feature_db *, char *);
+	_EX_DECL char *recognize(feature_db *, IplImage *);
 #endif
 
 #ifdef USE_SVM
-	_EX_DECL char *recognize_multi(CvSVM *, char *);
+	_EX_DECL char *recognize_multi(CvSVM *, IplImage *);
 #else
-	_EX_DECL char *recognize_multi(feature_db *, char *);
+	_EX_DECL char *recognize_multi(feature_db *, IplImage *);
 #endif
 
 _EX_DECL char *conv_fname(char *, const char *);
@@ -142,10 +142,12 @@ _EX_DECL int is_opencvxml(const char *);
 	_EX_DECL CvSVM *kocr_svm_init(char *);
 	_EX_DECL void kocr_svm_finish(CvSVM *);
 	_EX_DECL char *kocr_recognize_image(CvSVM *, char *);
+	_EX_DECL char *kocr_recognize_Image(CvSVM *, IplImage *);
 #else
 	_EX_DECL feature_db *kocr_init(char *filename);
 	_EX_DECL void kocr_finish(feature_db *db);
 	_EX_DECL char *kocr_recognize_image(feature_db *, char *);
+	_EX_DECL char *kocr_recognize_image(feature_db *, IplImage *);
 #endif
 
 #ifdef __cplusplus
