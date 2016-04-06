@@ -147,7 +147,7 @@ _EX_DECL int is_opencvxml(const char *);
 	_EX_DECL feature_db *kocr_init(char *filename);
 	_EX_DECL void kocr_finish(feature_db *db);
 	_EX_DECL char *kocr_recognize_image(feature_db *, char *);
-	_EX_DECL char *kocr_recognize_image(feature_db *, IplImage *);
+	_EX_DECL char *kocr_recognize_Image(feature_db *, IplImage *);
 #endif
 
 #ifdef __cplusplus
