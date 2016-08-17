@@ -138,12 +138,12 @@ main(int argc, char *argv[])
     case 3:
         // set weights-file name to argv[1]
         wf_name = argv[1];
-	target = argv[2];
-	break;
+        target = argv[2];
+        break;
     case 2:
         // set weights-file name to default name
         wf_name = strdup("cnn_weights.txt");
-	target = argv[1];
+        target = argv[1];
         break;
     default:
         usage();
@@ -166,6 +166,7 @@ main(int argc, char *argv[])
 
     printf("Result: %s\n", resultstr);
     free(resultstr);
+    free(wf_name);
 
     kocr_cnn_finish(net);
 
