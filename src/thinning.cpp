@@ -889,6 +889,8 @@ Extract_Feature_wrapper(char *fname, int features[N][N][ANGLES])
 }
 
 #ifdef USE_CNN
+// TODO this code was copied from Extract_Feature(),
+//      so it may have some useless codes for cnn.
 cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
     cv::Mat img_bw;
     cv::Mat img_eroded;
@@ -897,7 +899,7 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
     cv::Mat img_extracted;
     cv::Mat img_normalized;
 
-    int          i, j, ret = 0;
+    int          i, j;
     int          cc_turn = 0;
     double       size_turn = 0;
     LabelingBS   labeling;
@@ -1002,7 +1004,6 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
 
     num_of_cc = labeling.GetNumOfResultRegions();
     if (!num_of_cc) {
-      ret = ERR_RTN;
       goto finish;
     }
 

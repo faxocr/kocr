@@ -19,6 +19,12 @@ char *recognize(Network *net, IplImage *src_img){
 
     Tensor<float> src_tensor(src_shape);
     cv::Mat src_mat = preprocessing_for_cnn(cv::cvarrToMat(src_img, true));
+    if (src_mat.data == NULL){
+      // some error occured in preprocessing,
+      // it may be that the input image has no black area.
+      return NULL;
+    }
+
     for(int i=0;i<src_tensor.n;i++){
         src_tensor.ix(i) = (float)src_mat.data[i] / 255;
     }

@@ -151,6 +151,7 @@ main(int argc, char *argv[])
 
     // Recognize characters in target
     net = kocr_cnn_init(wf_name);
+    
     if (net != NULL && !net->load_completed){
         printf("An error occured in loading weights\n");
         exit(-1);
@@ -158,11 +159,7 @@ main(int argc, char *argv[])
 
     // Character recognition
     resultstr = kocr_recognize_image(net, target);
-    if (!resultstr){
-        printf("An error occured in recognizing image\n");
-        exit(-1);
-    }
-
+    
     printf("Result: %s\n", resultstr);
     free(resultstr);
     if (argc == 2) free(wf_name);
