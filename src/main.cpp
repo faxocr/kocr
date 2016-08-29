@@ -101,7 +101,6 @@ usage()
 
 #ifdef USE_CNN
     printf(" kocr\tweights-file target\t\tRecognize characters in target\n");
-    printf("\ttarget\t\tUse './cnn_weights.txt' as weights-file\n");
     printf("\n");
 
     printf("\tweights-file: *.txt\n");
