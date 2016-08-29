@@ -166,7 +166,7 @@ main(int argc, char *argv[])
 
     printf("Result: %s\n", resultstr);
     free(resultstr);
-    free(wf_name);
+    if (argc == 2) free(wf_name);
 
     kocr_cnn_finish(net);
 
