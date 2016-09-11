@@ -12,7 +12,7 @@ OBJS           = main.o
 TARGET         = kocr
 CFLAGS_OPENCV  = `pkg-config --cflags opencv`
 LDFLAGS_OPENCV = `pkg-config --libs opencv`
-CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o
+CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o preprocess.o
 
 SOLVER = CNN
 
@@ -34,6 +34,9 @@ all: $(TARGET)
 thin:
 	libtool --mode=compile $(CXX) -DTHINNING_MAIN -c $(CFLAGS) $(CFLAGS_OPENCV) thinning.cpp
 	libtool --mode=link $(CXX) -o thin thinning.o $(LDFLAGS_OPENCV) $(LDFLAGS)
+
+preprocess: thinning.o preprocess.o
+	libtool --mode=link $(CXX) -o preprocess thinning.o preprocess.o $(LDFLAGS_OPENCV)
 
 install: all
 	-(for dir in bin include lib share/kocr/databases; do mkdir -p $(PREFIX)/$$dir; done)
