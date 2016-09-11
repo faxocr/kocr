@@ -21,7 +21,7 @@ def load_data():
     X = X.astype(np.float32).reshape([-1, 1, nb_dim, nb_dim]) / 255
     y = np.zeros(labels.shape)
     unique_label = np.unique(labels)
-    for i, label in enumerate():
+    for i, label in enumerate(unique_label):
         y[labels == label] = i
     y = np_utils.to_categorical(y.astype(np.uint8))
     return X, y, unique_label
