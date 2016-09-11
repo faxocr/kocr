@@ -9,8 +9,6 @@
 
 
 char *recognize(Network *net, IplImage *src_img){
-    char result[2];
-
     std::vector<int> src_shape(4);
     src_shape[0] = 1;  // num of images
     src_shape[1] = 1;  // channel
@@ -30,15 +28,13 @@ char *recognize(Network *net, IplImage *src_img){
     }
     src_mat.release();
 
-    int response = net->predict_classes(src_tensor)[0];
+    std::string response = net->predict_labels(src_tensor)[0];
 
 #ifndef LIBRARY
-    printf("Recogized: %d\n", response);
+    printf("Recogized: %s\n", response.c_str());
 #endif
 
-    result[0] = (char)(response + '0');  // convert int to char;
-    result[1] = '\0';
-    return strdup(result);
+    return strdup(response.c_str());
 }
 
 
@@ -130,6 +126,13 @@ Network *kocr_cnn_init(char *filename){
     if (filename == NULL)
         return (Network *) NULL;
 
+    std::ifstream ifs(filename, std::ifstream::in);
+    std::string line;
+    std::getline(ifs, line);
+    std::istringstream ss(line);
+    int nb_classes;
+    ss >> nb_classes;
+
     net = new Network();
 
     std::vector<int> input_shape(3);
@@ -157,11 +160,12 @@ Network *kocr_cnn_init(char *filename){
     net->add(new Relu());
     net->add(new Dropout(0.5));
 
-    net->add(new Dense(10));
+    net->add(new Dense(nb_classes));
     net->add(new Softmax());
 
     net->build();
-    net->load_weights(filename);
+    net->load_weights(ss);
+    net->set_label(nb_classes, ss);
 
     return net;
 }

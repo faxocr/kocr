@@ -404,9 +404,12 @@ class Network{
 public:
     std::vector<layer*> layers;
     bool load_completed;
+    bool label_set;
+    std::vector<std::string> labels;
 
     Network() {
-      load_completed = false;
+        load_completed = false;
+        label_set = false;
     }
 
     ~Network() {
@@ -435,7 +438,23 @@ public:
         for(int i=0;i<layers.size();i++){
             layers[i]->load_weights(ss);
         }
-	load_completed = true;
+        load_completed = true;
+    }
+
+    void load_weights(std::istringstream& ss){
+        for(int i=0;i<layers.size();i++){
+            layers[i]->load_weights(ss);
+        }
+        load_completed = true;
+    }
+
+    void set_label(int nb_classes, std::istringstream&ss){
+        labels.resize(nb_classes);
+        for(int i=0;i<nb_classes;i++){
+            assert(!ss.eof());
+            ss >> labels[i];
+        }
+        label_set = true;
     }
 
     Tensor<float> predict(Tensor<float>& X){
@@ -462,6 +481,16 @@ public:
             label[i] = max_idx;
         }
         return label;
+    }
+
+    std::vector<std::string> predict_labels(Tensor<float>& X){
+        assert(label_set);
+        std::vector<int> classes = predict_classes(X);
+        std::vector<std::string> ret_labels(classes.size());
+        for(int i=0;i<classes.size();i++){
+            ret_labels[i] = labels[classes[i]];
+        }
+        return ret_labels;
     }
 
     void add(layer *l){
