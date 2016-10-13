@@ -12,7 +12,7 @@ OBJS           = main.o
 TARGET         = kocr
 CFLAGS_OPENCV  = `pkg-config --cflags opencv`
 LDFLAGS_OPENCV = `pkg-config --libs opencv`
-CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o preprocess.o
+CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o preprocess.o preprocess
 
 SOLVER = CNN
 

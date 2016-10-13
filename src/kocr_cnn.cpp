@@ -185,8 +185,7 @@ char *kocr_recognize_image(Network *net, char *file_name){
       return NULL;
     }
 
-    src_img = cvLoadImage(file_name,
-              CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
+    src_img = cvLoadImage(file_name);
 
     // OpenCV does not support GIF format
     if (!src_img) {

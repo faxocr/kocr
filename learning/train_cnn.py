@@ -1,7 +1,5 @@
 import numpy as np
 np.random.seed(71)
-import cv2
-import matplotlib.pyplot as plt
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
@@ -9,11 +7,12 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2
 from keras.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from keras.utils import np_utils
 from keras.optimizers import Adam
+from keras.preprocessing.image import ImageDataGenerator
 
 
 nb_dim = 48
 batch_size = 128
-nb_epoch = 100
+nb_epoch = 200
 
 
 def load_data():
@@ -27,31 +26,17 @@ def load_data():
     return X, y, unique_label
 
 
-def augment_data(X, y):
-    X_list, y_list = [], []
-    for i in xrange(X.shape[0]):
-        img_i = X[i][0]
-        X_list.append(img_i)
-        y_list.append(y[i])
-        for _ in range(10):
-            angle = np.random.uniform(-30, 30)
-            scale = np.random.uniform(0.9, 1.05)
-            rotation_matrix = cv2.getRotationMatrix2D((24, 24), angle, scale)
-            img_rot = cv2.warpAffine(img_i, rotation_matrix, img_i.shape,
-                                     flags=cv2.INTER_LINEAR)
-            X_list.append(img_rot)
-            y_list.append(y[i])
-    return np.array(X_list).reshape([-1, 1, 48, 48]), np.array(y_list)
-
-
 print "Load data"
 X, y, unique_label = load_data()
+n = X.shape[0]
 
 
-print "Augment data"
-X, y = augment_data(X, y)
-idx = np.random.permutation(X.shape[0])
-X, y = X[idx], y[idx]
+print "Split data into train set and validation set"
+idx = np.random.permutation(n)
+n_train = int(n * 0.9) / batch_size * batch_size
+X_train, y_train = X[idx[:n_train]], y[idx[:n_train]]
+X_valid, y_valid = X[idx[n_train:]], y[idx[n_train:]]
+samples_per_epoch = 10 * n_train
 
 
 print "Build model"
@@ -91,10 +76,19 @@ print "Fit"
 earlystopping = EarlyStopping(monitor='val_loss', patience=10)
 checkpointer = ModelCheckpoint(filepath="weights.hdf5",
                                verbose=0, save_best_only=True)
-model.fit(X_train, y_train, nb_epoch=nb_epoch, batch_size=batch_size,
-          verbose=1, validation_split=0.1,
-          callbacks=[earlystopping, checkpointer])
+
+datagen = ImageDataGenerator(
+    zoom_range=[0.9, 1.05],
+    rotation_range=20)
+
+model.fit_generator(datagen.flow(X_train, y_train, batch_size=batch_size),
+                    samples_per_epoch=samples_per_epoch,
+                    validation_data=(X_valid, y_valid),
+                    callbacks=[earlystopping, checkpointer],
+                    nb_epoch=nb_epoch, verbose=1)
+
 model.load_weights("weights.hdf5")
+print "Testing on keras:", (model.predict_classes(X) == y.argmax(axis=1)).mean()
 
 
 def dump_weights(filename, model):

@@ -6,7 +6,7 @@ from PIL import Image
 
 
 preprocess = "../src/preprocess"
-remove_conv_images = True
+remove_conv_images = False
 
 
 if len(sys.argv) != 2:
@@ -24,6 +24,8 @@ conv_files = []
 for file_name in os.listdir(target):
     if file_name[-4:] not in [".png", ".pbm", ".jpg"]:
         continue
+    if file_name.endswith("-conv.png"):
+        continue
 
     file_path = target + file_name
     try:
@@ -33,6 +35,7 @@ for file_name in os.listdir(target):
         break
     except:
         print "An error occurred:", file_name
+
 
 X, y = [], []
 for file_name in conv_files:

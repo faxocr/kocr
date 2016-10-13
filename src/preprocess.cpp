@@ -15,8 +15,7 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    IplImage *src_img = cvLoadImage(argv[1],
-                                    CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
+    IplImage *src_img = cvLoadImage(argv[1]);
     if (!src_img) {
         return 1;
     }
