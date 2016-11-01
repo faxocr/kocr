@@ -6,3 +6,4 @@ images/**/*.xml
 *.a
 src/.libs/
 src/kocr
+src/preprocess

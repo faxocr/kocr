@@ -12,16 +12,65 @@
 
  なお、複数文字の認識も可能です。
 
- また、コンパイル時のオプションで、認識アルゴリズムを最近傍法とSVM法
- とで切り替えることが可能です。なお、最近傍法のデータベースファイルは、
+ また、コンパイル時のオプションで、認識アルゴリズムをCNN、SVM、最近傍法
+ で切り替えることが可能です。なお、最近傍法のデータベースファイルは、
  拡張子.dbですが、SVM法は拡張子.xmlとなっています。下記は、適宜、読み
  替えてご利用下さい。
 
+
+ * インストール
+
+ まず、OpenCVをインストールして下さい。linuxであれば、下記を実行すると
+ 良いはずです。
+
+# apt-get install libcv-dev
+# apt-get install libhighgui-dev
+# apt-get install libcvaux-dev
+
+ そのうえで、srcディレクトリでmakeして下さい。SOLVER=CNNを指定するか
+ 何も指定しないとCNNバージョンがコンパイルされます。
+
+$ cd src
+$ make
+
+ make時にSOLVER=SVMを指定するとSVMバージョンでコンパイルされます
+
+$ make SOLVER=SVM
+
+ SOLVERにCNN, SVM以外の文字を指定すると最近傍法版がコンパイルされます
+
+$ make SOLVER=OTHER
+
+ - システムへのインストール(/usr/local 以下にインストールされます)
+$ make install
+
+ - インストール先を変える場合
+$ make install PREFIX=/usr
+
+
  * 使い方
 
-[最近傍法]
+[CNN]
+
+ - 学習済みの重みファイルと読ませたい文字列を当てると、認識結果を返します
+
+$ ./kocr cnn_weights.txt ../images/samples/sample-img-6.pbm
+
+ - 学習済みの重みファイルを指定しなかった場合、現在のディレクトリの
+ cnn_weights.txtを利用します
+
+$ ./kocr ../images/samples/sample-img-6.pbm
+
+ - 重みファイルと画像リストファイルを与えると性能評価を行います(未実装)
+
+$ ./kocr cnn_weights.txt ../images/faximg/list-num.txt
+
+ 学習及び重みファイルの作成についてはpythonを用いて行います(後述)
+
+[SVM, 最近傍法]
 
  - 手書き文字のサンプルを学習させ、「データベースファイル」を作ります
+ データベースファイルの拡張子はSVMなら.xml、最近傍法なら.dbとなります
 
 $ ./kocr ../images/faximg/list-num.txt
 3098 images found
@@ -45,6 +94,7 @@ loading database file, ../images/faximg/list-num.db...
 starting leave-one-out testing...
 Recog-rate = 0.991285 (= 3071 / 3098 )
 $
+
 
  * 画像リストファイル
 
@@ -70,39 +120,11 @@ $ cat list-num.lst
 
 いずれの場合も、.db拡張子の付いたデータベースファイルを作成します。
 
- * インストール
 
- まず、OpenCVをインストールして下さい。linuxであれば、下記を実行すると
- 良いはずです。
+ * 学習及び重みファイルの作成について
+ pythonのDeep Learning用ライブラリKerasを用いて学習を行います。
 
-# apt-get install libcv-dev
-# apt-get install libhighgui-dev
-# apt-get install libcvaux-dev
-
- そのうえで、srcディレクトリでmakeして下さい。SVMバージョンがコンパイルされます。
-
-$ cd src
-$ make
-g++ -c -g `pkg-config --cflags opencv` kocr.cpp
-g++ -c -g `pkg-config --cflags opencv` subr.cpp
-g++ -c -g `pkg-config --cflags opencv` cropnums.cpp
-g++ -c -g `pkg-config --cflags opencv` main.cpp
-g++ `pkg-config --libs opencv` -o kocr kocr.o subr.o cropnums.o main.o
-$
-
- これで終わりです。
-
- - 最近傍法版のmake
-$ cd src
-$ make CFLAGS="-O3"
-
- - システムへのインストール(/usr/local 以下にインストールされます)
-$ cd src
-$ make install
-
- インストール先を変える場合
-$ cd src
-$ make install PREFIX=/usr
+ 詳しくはlearningフォルダのREADME.mdをご覧ください。
 
 
  * ファイル一覧
@@ -119,6 +141,9 @@ $ make install PREFIX=/usr
     /Labeling.h	画像処理サブルーチン用ヘッダ
     /cropnums.cpp 文字切り出しルーチン
     /cropnums.h 文字切り出しルーチン用ヘッダ
+    /kocr_cnn.cpp CNN利用時のエンジン本体
+    /kocr_cnn.h CNN利用時のOCR用ヘッダ
+    /forward_cnn.h CNNの認識部
 
  images/	文字画像ディレクトリ
 
@@ -136,7 +161,30 @@ $ make install PREFIX=/usr
        /error	システムのエラー出力用
        /samples	読み取りテスト用サンプルファイル
 
+
  * 外部API
+
+[CNN]
+
+ Network *kocr_cnn_init(char *filename);
+ 	kocr利用開始。重みファイル(filename)を読み込んだCNN返す。
+
+ char *kocr_recognize_image(Network *net, char *filename);
+ 	画像ファイルを認識する。返値は認識した文字列。
+
+ void kocr_cnn_finish(Network *);
+ 	kocr利用終了。CNNが確保しているメモリを解放する。
+
+[SVM]
+
+ CvSVM *kocr_init(char *filename);
+ 	kocr利用開始。学習済みのSVMを返す。
+
+ char *kocr_recognize_image(CvSVM *db, char *fname);
+ 	画像ファイルを認識する。返値は認識した文字列。
+
+ void kocr_finish(CvSVM *db);
+ 	kocr利用終了。SVMを解放する。
 
 [最近傍法]
 
@@ -149,14 +197,3 @@ char *kocr_recognize_image(feature_db * db, char *fname);
 
 void kocr_finish(feature_db *db);
 	kocr利用終了。DBを解放する。
-
-[SVM法]
-
-CvSVM *kocr_init(char *filename);
-	kocr利用開始。学習済みのSVMを返す。
-
-char *kocr_recognize_image(CvSVM *db, char *fname);
-	画像ファイルを認識する。返値は認識した文字列。
-
-void kocr_finish(CvSVM *db);
-	kocr利用終了。SVMを解放する。

@@ -469,7 +469,7 @@ angle_print(int angles[N][N][ANGLES])
 	printf("%2d ", mode[j][i]);
       else
 	printf(" * ");
-    
+
     printf("\n");
   }
 #endif
@@ -887,6 +887,247 @@ Extract_Feature_wrapper(char *fname, int features[N][N][ANGLES])
 
   return ret;
 }
+
+#ifdef USE_CNN
+// TODO this code was copied from Extract_Feature(),
+//      so it may have some useless codes for cnn.
+cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
+    cv::Mat img_bw;
+    cv::Mat img_eroded;
+    cv::Mat img_dilated;
+    cv::Mat img_distance;
+    cv::Mat img_extracted;
+    cv::Mat img_normalized;
+
+    int          i, j;
+    int          cc_turn = 0;
+    double       size_turn = 0;
+    LabelingBS   labeling;
+
+#ifdef DEBUG
+    double       t;
+    t = (double)cvGetTickCount();
+#endif
+
+    /*
+     * 白黒画像取得
+     */
+    if (img_src.channels() > 1) {
+      cv::cvtColor(img_src, img_bw, CV_BGR2GRAY);
+      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
+      // cv::threshold(img_bw, img_bw, 254, 255, CV_THRESH_BINARY);
+      img_bw =~ img_bw;
+    } else {
+      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
+      img_bw =~ img_src;
+    }
+
+    /*
+     * 膨張・縮小処理
+     *
+     *   dilateは、白の膨張→黒の減少
+     *   elode は、白の収縮→黒の膨張
+     */
+    double dist_min, thickness1, thickness2;
+    img_dilated = cv::Mat(img_bw.size(), CV_8UC1);
+    img_eroded  = cv::Mat(img_bw.size(), CV_8UC1);
+
+    // やるべき処理
+    //
+    // かすれ画像: 膨張・収縮で実線化
+    //   閉じるべきループを閉じる (8の右上等)
+    // ちぎれ画像: 膨張で接続
+    //
+    // ただし：
+    //   閉じるべきでないループを閉じない (6の右上)
+    //   閉じるべきでないループを閉じない (8や9の小さなループ)
+
+ backtrack:
+    cv::dilate(img_bw, img_dilated, element, cv::Point(-1, -1), 1);
+    cv::erode(img_dilated, img_eroded, element, cv::Point(-1, -1), 1);
+
+    // ループの消失をチェック
+    cv::distanceTransform(img_bw, img_distance, CV_DIST_L2, 3);
+    cv::minMaxLoc(img_distance, &dist_min, &thickness1);
+    img_distance.release(); // メモリリーク対策 (不要？)
+
+    cv::distanceTransform(img_eroded, img_distance, CV_DIST_L2, 3);
+    cv::minMaxLoc(img_distance, &dist_min, &thickness2);
+
+    // 中心線抽出処理 (太線の際、中心線のみを抽出する)
+    if (!cc_turn && thickness2 > 8) { //  && thickness2 < 14) {
+      // printf("%s: %d, %d\n", filename, (int) thickness2, cc_turn);
+
+      for (i = 0; i < img_eroded.size().height; i++)
+	for (j = 0; j < img_eroded.size().width; j++) {
+	  // このthicknessの閾値により、認識精度がわずかに変化する
+	  if (img_distance.at<float>(i, j) > thickness2 - 1)
+	    img_eroded.at<uchar>(i, j) = 0;
+	  else if (img_distance.at<float>(i, j) < thickness2 / 2 - 1)
+	    img_eroded.at<uchar>(i, j) = 0;
+	}
+    }
+
+    if ((double) (thickness2 / thickness1) >
+	(ELIMINATION_THRESHOLD + size_turn)) {
+      img_eroded.release(); // メモリリーク対策 (不要？)
+      img_eroded = img_bw;
+    }
+
+    /*
+     * ラベリング処理 (罫線除去・ノイズ除去・文字要素の抽出)
+     */
+    unsigned char  *img_label = new unsigned char[img_eroded.size().height *
+                                                  img_eroded.size().width];
+    short          *cc_result = new short[img_eroded.size().height *
+                                          img_eroded.size().width];
+    int             size_x, size_y, top_x, top_y, bottom_x, bottom_y;
+    int             cc, num_of_cc;
+    int             src_width, src_height, dst_width, dst_height, dst_size;
+    int             padding_x, padding_y;
+    double          aspect_ratio;
+    RegionInfoBS   *ri;
+
+    // ラベリング用データ生成 (XXX: 非効率)
+    for (i = 0; i < img_eroded.size().width; i++) {
+      for (j = 0; j < img_eroded.size().height; j++) {
+        img_label[j * img_eroded.size().width + i] =
+          img_eroded.at<uchar>(j, i); // atは (y, x)
+      }
+    }
+
+    // true: 領域の大きな順にソートする場合
+    // 3: 領域検出の最小領域
+    labeling.Exec(img_label, cc_result,
+                  img_eroded.size().width,
+                  img_eroded.size().height, true, 3);
+
+    num_of_cc = labeling.GetNumOfResultRegions();
+    if (!num_of_cc) {
+      goto finish;
+    }
+
+    //「罫線らしくないCCのうち、最大サイズのCC」を文字として選択
+    for (cc = 0; cc < num_of_cc; cc++) {
+        ri = labeling.GetResultRegionInfo(cc);
+        ri->GetSize(size_x, size_y);
+        if (size_x > size_y)
+            aspect_ratio = (double)size_x / (double)size_y;
+        else
+            aspect_ratio = (double)size_y / (double)size_x;
+
+        // 罫線っぽい連結成分をスキップ
+        if (!(
+	      (aspect_ratio > 8) &&
+	      (size_x > img_eroded.size().width - 2 ||
+	       size_y > img_eroded.size().height - 2)
+              // (ri->GetNumOfPixels() > img_eroded.size().height / 2)
+	      )
+	    ) {
+            break;
+        }
+    }
+
+    // 文字カスレが疑われれば、1回に限りバックトラック
+    if (cc_turn++ < 2 && cc + 1 < num_of_cc) {
+      int size_a = ri->GetNumOfPixels();
+      ri = labeling.GetResultRegionInfo(cc + 1);
+      int size_b = ri->GetNumOfPixels();
+      if (size_a / size_b < 10) {
+	// 要素を1つのみ選択するアルゴリズムのため、膨張して結合する目的で
+	// バックトラックをしているが、一定サイズの要素を複数選択する実装に
+	// 変更した方が良いかもしれない
+        goto backtrack;
+      }
+      ri = labeling.GetResultRegionInfo(cc);
+    }
+
+    // 切り出し用サイズの生成
+    ri->GetMax(top_x, top_y);
+    ri->GetMin(bottom_x, bottom_y);
+    src_width = img_eroded.size().width;
+    src_height = img_eroded.size().height;
+    dst_width = ABS(top_x - bottom_x);
+    dst_height = ABS(top_y - bottom_y);
+    dst_size = MAX(dst_width, dst_height) + 2; // 上下マージン
+
+    // 文字サイズが小さければ、カスレの閾値について再検証
+    if (size_turn == 0 && dst_width < 40 && dst_height < 40) {
+      size_turn = 0.05;
+	if ((double) (thickness2 / thickness1) <
+	    (ELIMINATION_THRESHOLD + size_turn)) {
+	  goto backtrack;
+	}
+    }
+
+    /*
+     * 対象要素の切り出し
+     */
+    img_extracted = cv::Mat::zeros(cv::Size(dst_size, dst_size), CV_8UC1);
+
+    // センタリング (不利な気もするが、centeringが最も性能が良い)
+    padding_x = dst_size / 2 - dst_width / 2;
+    padding_y = dst_size / 2 - dst_height / 2;
+
+    for (i = 0; i < dst_size; i++) {
+      for (j = 0; j < dst_size; j++) {
+        if (i + bottom_x - padding_x < src_width &&
+	    j + bottom_y - padding_y < src_height &&
+	    0 < i + bottom_x - padding_x &&
+	    0 < j + bottom_y - padding_y < src_height) {
+	  if (cc_result[src_width * (j + bottom_y - padding_y) +
+			i + bottom_x - padding_x] == (cc + 1)) {
+	    img_extracted.at<uchar>(j, i) = (uchar) 255;
+	  } else {
+	    img_extracted.at<uchar>(j, i) = (uchar) 0;
+	  }
+	}
+      }
+    }
+
+    /*
+     * Deskew処理
+     */
+    deskew(img_extracted);
+
+    /*
+     * サイズ正規化処理
+     */
+    resize(img_extracted, img_normalized,
+	   cv::Size(SIZE_NORMALIZED, SIZE_NORMALIZED),
+           SIZE_NORMALIZED / img_extracted.size().width,
+           SIZE_NORMALIZED / img_extracted.size().height, CV_INTER_AREA);
+
+    // 外周マージン再確保 (各種アルゴリズム上、マージンがあるほうが効率が良い)
+    for (i = 0; i < SIZE_NORMALIZED; i++) {
+      img_normalized.at<uchar>(0, i) = (uchar) 0;
+      img_normalized.at<uchar>(SIZE_NORMALIZED - 1, i) = (uchar) 0;
+    }
+    for (j = 0; j < SIZE_NORMALIZED; j++) {
+      img_normalized.at<uchar>(j, 0) = (uchar) 0;
+      img_normalized.at<uchar>(j, SIZE_NORMALIZED - 1) = (uchar) 0;
+    }
+
+    /*
+     * 細線化処理
+     */
+    thinning(img_normalized);
+
+#ifdef DEBUG
+    t = (double)cvGetTickCount() - t;
+    printf("%gms\n", t / ((double) cvGetTickFrequency() * 1000.0));
+#endif
+
+ finish:
+    img_bw.release();
+    img_eroded.release();
+    img_dilated.release();
+    img_distance.release();
+    img_extracted.release();
+
+    return img_normalized;
+}
+#endif /* USE_CNN */
 
 #ifdef THINNING_MAIN
 /**

@@ -1,8 +1,8 @@
 /*
  * main.cpp
- * 
+ *
  * Copyright (c) 2012, Takashi Okumura. All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -42,12 +42,18 @@
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
+
+#ifdef USE_CNN
+#include "forward_cnn.h"
+#include "kocr_cnn.h"
+#else
 #ifdef USE_SVM
 #include <opencv/ml.h>
 #endif
-
 #include "kocr.h"
 #include "subr.h"
+#endif
+
 #include "cropnums.h"
 #include "Labeling.h"
 
@@ -81,23 +87,35 @@ conv_fname(char *fname, const char *ext)
 /* ============================================================
  * 利用法説明
  * ============================================================ */
-static void 
+static void
 usage()
 {
     printf("\n");
 #ifdef USE_SVM
     printf("usage (SVM mode):\n\n");
+#elif defined USE_CNN
+    printf("usage (CNN mode):\n\n");
 #else
     printf("usage:\n\n");
 #endif
+
+#ifdef USE_CNN
+    printf(" kocr\tweights-file target\t\tRecognize characters in target\n");
+    printf("\n");
+
+    printf("\tweights-file: *.txt\n");
+#else
     printf(" kocr\timage-list\t\tCreates a database file\n");
     printf("\tdatabase-file\t\tEvaluates a database file\n");
     printf("\tdatabase-file target\tRecognize characters in target\n");
     printf("\n");
+
 #ifdef USE_SVM
     printf("\tdatabase-file: *.xml\n");
 #else
     printf("\tdatabase-file: *.db\n");
+#endif
+
 #endif
     printf("\ttarget: *.[png|pbm|jpg]\n\n");
 }
@@ -105,12 +123,49 @@ usage()
 /* ============================================================
  * メイン関数
  * ============================================================ */
-int 
+int
 main(int argc, char *argv[])
 {
+    char *resultstr;
+
+#ifdef USE_CNN
+
+    Network *net;
+    char *wf_name, *target;
+
+    switch (argc) {
+    case 3:
+        // set weights-file name to argv[1]
+        wf_name = argv[1];
+        target = argv[2];
+        break;
+    default:
+        usage();
+        exit(0);
+    }
+
+    // Recognize characters in target
+    net = kocr_cnn_init(wf_name);
+    
+    if (net != NULL && !net->load_completed){
+        printf("An error occured in loading weights\n");
+        exit(-1);
+    }
+
+    // Character recognition
+    resultstr = kocr_recognize_image(net, target);
+    
+    printf("Result: %s\n", resultstr);
+    free(resultstr);
+
+    kocr_cnn_finish(net);
+
+#else
+
+    // using SVM or Nearest Neighbor
+
     char           *db_name, *lst_name;
     feature_db     *db;
-    char           *resultstr;
 
 #ifdef USE_SVM
     CvSVM *svm;
@@ -218,5 +273,6 @@ main(int argc, char *argv[])
 	usage();
 	exit(0);
     }
+#endif /* USE_CNN */
+    return 0;
 }
-
