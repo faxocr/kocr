@@ -25,9 +25,24 @@ void kocr_distance(feature_db * db, char *lst_name);
 void kocr_average(feature_db * db, char *lst_name);
 */
 
-Network *kocr_cnn_init(char *);
-void kocr_cnn_finish(Network *);
-char *kocr_recognize_image(Network *, char *);
-char *kocr_recognize_Image(Network *, IplImage *);
+#ifdef __cplusplus
+#define _EX_DECL
+#else
+#define _EX_DECL extern
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+_EX_DECL Network *kocr_cnn_init(char *);
+_EX_DECL void kocr_cnn_finish(Network *);
+_EX_DECL char *kocr_recognize_image(Network *, char *);
+_EX_DECL char *kocr_recognize_Image(Network *, IplImage *);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* KOCR_CNN_H */
