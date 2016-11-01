@@ -155,7 +155,7 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
 
     //create a image with bba
 	result = cvCreateImage(cvSize(rect.width, rect.height),
-			       src_img->depth, 1);
+			       src_img->depth, src_img->nChannels);
 
     if (result == NULL)
 	return NULL;

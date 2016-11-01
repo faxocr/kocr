@@ -60,7 +60,7 @@ char *recognize_multi(Network *net, IplImage *src_img) {
 
     // 文字列全体のBB
     bb = findBB(src_img); // cropnums.cpp内で宣言
-    body = cvCreateImage(cvSize(bb.width, bb.height), src_img->depth, 1);
+    body = cvCreateImage(cvSize(bb.width, bb.height), src_img->depth, src_img->nChannels);
     // void cvSet( CvArr* arr, CvScalar value, const CvArr* mask=NULL ):
     // 配列arrにvalueを入れる
     cvSet(body, CV_RGB(255, 255, 255), NULL);
