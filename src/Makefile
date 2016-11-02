@@ -1,7 +1,3 @@
-#
-# Simple makefile for kocr
-#
-
 # makefile format: GNU make
 
 # REQUIRED: libcv, libcvaux
