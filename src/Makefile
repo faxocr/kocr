@@ -13,26 +13,27 @@ TARGET         = kocr
 CFLAGS_OPENCV  = `pkg-config --cflags opencv`
 LDFLAGS_OPENCV = `pkg-config --libs opencv`
 CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o preprocess.o preprocess
+CFLAGS         = -O3
 
 SOLVER = CNN
 
 
 ifeq ($(SOLVER), CNN)
-	LIB_OBJS   = kocr_cnn.o cropnums.o thinning.o
-	CFLAGS     = -O3 -DUSE_CNN -DTHINNING
+	LIB_OBJS      = kocr_cnn.o cropnums.o thinning.o
+	CFLAGS_SOLVER = -DUSE_CNN -DTHINNING
 else ifeq ($(SOLVER), SVM)
-	LIB_OBJS   = kocr.o subr.o cropnums.o thinning.o
-	CFLAGS     = -O3 -DUSE_SVM -DTHINNING
+	LIB_OBJS      = kocr.o subr.o cropnums.o thinning.o
+	CFLAGS_SOLVER = -DUSE_SVM -DTHINNING
 else
-	LIB_OBJS   = kocr.o subr.o cropnums.o thinning.o
-	CFLAGS     = -O3
+	LIB_OBJS      = kocr.o subr.o cropnums.o thinning.o
+	CFLAGS_SOLVER =
 endif
 
 
 all: $(TARGET)
 
 thin:
-	libtool --mode=compile $(CXX) -DTHINNING_MAIN -c $(CFLAGS) $(CFLAGS_OPENCV) thinning.cpp
+	libtool --mode=compile $(CXX) -DTHINNING_MAIN -c $(CFLAGS) $(CFLAGS_SOLVER) $(CFLAGS_OPENCV) thinning.cpp
 	libtool --mode=link $(CXX) -o thin thinning.o $(LDFLAGS_OPENCV) $(LDFLAGS)
 
 preprocess: thinning.o preprocess.o
@@ -56,19 +57,19 @@ static: $(LIB_OBJS) $(OBJS) libkocr.la
 ifeq ($(SOLVER), CNN)
 library:
 	rm -f *.o
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c kocr_cnn.cpp
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c thinning.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c kocr_cnn.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c thinning.cpp
 	$(AR) rv libkocr.a kocr_cnn.o cropnums.o thinning.o
 	ranlib libkocr.a
 	rm -f *.o
 else
 library:
 	rm -f *.o
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c kocr.cpp
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c subr.cpp
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
-	$(CXX) $(CFLAGS) $(OPT_OPENCV) -DLIBRARY -c thinning.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c kocr.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c subr.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c cropnums.cpp
+	$(CXX) $(CFLAGS) $(CFLAGS_SOLVER) $(OPT_OPENCV) -DLIBRARY -c thinning.cpp
 	$(AR) rv libkocr.a kocr.o subr.o cropnums.o thinning.o
 	ranlib libkocr.a
 	rm -f *.o
@@ -78,7 +79,7 @@ libkocr.la: $(LIB_OBJS:.o=.lo)
 	libtool --mode=link $(CXX) -o $@ $^ $(LDFLAGS_OPENCV) $(LDFLAGS) -rpath $(PREFIX)/lib
 
 %.o: %.cpp
-	libtool --mode=compile $(CXX) -c $(CFLAGS) $(CFLAGS_OPENCV) $<
+	libtool --mode=compile $(CXX) -c $(CFLAGS) $(CFLAGS_SOLVER) $(CFLAGS_OPENCV) $<
 
 clean:
 	libtool --mode=clean rm -f $(TARGET) kocr-static libkocr.la libkocr.a thin $(CLEAN_TARGET:.o=.lo)
