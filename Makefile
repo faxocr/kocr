@@ -1,7 +1,9 @@
 
 all:
 
-generatedb:
+generatedb: gen-nn-db gen-svm-db
+
+gen-nn-db:
 	(cd src; $(MAKE) "SOLVER=" clean all)
 	./src/kocr images/numbers/list-num.lst
 	cp -p images/numbers/list-num.db databases
@@ -28,6 +30,7 @@ generatedb:
 	./src/kocr images/numocrb/list-numocrb.lst
 	cp -p images/numocrb/list-numocrb.db databases
 
+gen-svm-db:
 	(cd src; $(MAKE) "SOLVER=SVM" clean all)
 	./src/kocr images/numbers/list-num.lst
 	cp -p images/numbers/list-num.xml databases
