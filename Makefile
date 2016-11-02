@@ -2,7 +2,7 @@
 all:
 
 generatedb:
-	(cd src; $(MAKE) "CFLAGS=-O3" clean all)
+	(cd src; $(MAKE) "SOLVER=" clean all)
 	./src/kocr images/numbers/list-num.lst
 	cp -p images/numbers/list-num.db databases
 	./src/kocr images/mbsdb/list-mbs.lst
@@ -28,7 +28,7 @@ generatedb:
 	./src/kocr images/numocrb/list-numocrb.lst
 	cp -p images/numocrb/list-numocrb.db databases
 
-	(cd src; $(MAKE) "CFLAGS=-O3 -DUSE_SVM" clean all)
+	(cd src; $(MAKE) "SOLVER=SVM" clean all)
 	./src/kocr images/numbers/list-num.lst
 	cp -p images/numbers/list-num.xml databases
 	./src/kocr images/mbsdb/list-mbs.lst
