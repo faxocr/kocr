@@ -1,3 +1,4 @@
+PREFIX=/usr/local
 
 all:
 
@@ -48,3 +49,7 @@ gen-svm-db:
 		cat ../sample-ocrb/list-ocrb.lst >> list-numocrb.lst; )
 	./src/kocr images/numocrb/list-numocrb.lst
 	cp -p images/numocrb/list-numocrb.xml databases
+
+install-db:
+	(dir=share/kocr/databases; if [ ! -e $$dir ]; then mkdir -p $(PREFIX)/$$dir; fi)
+	install -c -m 444 -o root -g root databases/* $(PREFIX)/share/kocr/databases
