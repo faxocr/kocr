@@ -52,7 +52,13 @@
 #define ERR_RTN -1
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 
+/* for debugging */
 char filename[FILENAME_SIZE];
+#ifdef THINNING_MAIN
+static int checkPreprocessedImage(const cv::Mat &img_src, const cv::Mat &img_bw, const cv::Mat &img_dilated, const cv::Mat &img_eroded, const cv::Mat &img_extracted, const cv::Mat &img_normalized);
+static int showPreprocessedImageFlag = 0;
+static char *writePreprocessedImageFileName = NULL;
+#endif /* THINNING_MAIN */
 
 // 膨張・収縮処理用マスク
 static cv::Mat element = (cv::Mat_<uchar>(3,3) << 0,1,0,1,1,1,0,1,0);
@@ -848,6 +854,9 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
     cv::waitKey(0);
     cvDestroyAllWindows();
 #endif
+#ifdef THINNING_MAIN
+    checkPreprocessedImage(img_src, img_bw, img_dilated, img_eroded, img_extracted, img_normalized);
+#endif /* THINNING_MAIN */
 
  finish:
     img_bw.release();
@@ -1117,6 +1126,9 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
     t = (double)cvGetTickCount() - t;
     printf("%gms\n", t / ((double) cvGetTickFrequency() * 1000.0));
 #endif
+#ifdef THINNING_MAIN
+    checkPreprocessedImage(img_src, img_bw, img_dilated, img_eroded, img_extracted, img_normalized);
+#endif /* THINNING_MAIN */
 
  finish:
     img_bw.release();
@@ -1133,13 +1145,177 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
 /**
  * For debugging purpose
  */
+#include <getopt.h>
+
+/**
+ * create an image that contains a lot of images in one image, and return it in cv::Mat
+ *
+ * parameters: out_img: to store a generated image
+ *             other: images in cv::Mat
+ *
+ * return: 0: success
+ *         2: cannot create temporary directory
+ *         3: an error happens when executing the montage command
+ *         4: cannot clean up temporary directory created in this function
+ *
+ * This function requires "montage" command from ImageMagick
+ */
+static int
+getMontagedImageAfterPreprocessing(cv::Mat &out_img, const cv::Mat &img_src, const cv::Mat &img_bw, const cv::Mat &img_dilated, const cv::Mat &img_eroded, const cv::Mat &img_extracted, const cv::Mat &img_normalized)
+{
+    int returnCode = 0;
+
+    char *montageCmd = (char *)malloc(sizeof(char) * 1024 + 1);
+    char *montagedFile = (char *)malloc(sizeof(char) * PATH_MAX + 1);
+    char *rmCmd = (char *)malloc(sizeof(char) * 1024 + 1);
+    char *dirTemplate = (char *)malloc(sizeof(char) * PATH_MAX + 1);
+    char *thinningTmpFile = (char *)malloc(sizeof(char) * PATH_MAX + 1);
+    char *thinningTmpDir;
+
+    do {
+        /* get a prefix of temporary directory */
+        const char *tmpDir = getenv("TMPDIR");
+        if (tmpDir == NULL) {
+            tmpDir = "/tmp";
+        }
+
+        /* make a temporary directory to store image files used in this function */
+        snprintf(dirTemplate, PATH_MAX, "%s/kocrThinning.XXXXXX", tmpDir);
+        thinningTmpDir = mkdtemp(dirTemplate);
+        if (thinningTmpDir == NULL) {
+            returnCode = 2;
+            break;
+        }
+
+        /* writing the images to files */
+        snprintf(thinningTmpFile, PATH_MAX, "%s/0src.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_src);
+        snprintf(thinningTmpFile, PATH_MAX, "%s/bw.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_bw);
+        snprintf(thinningTmpFile, PATH_MAX, "%s/dilated.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_dilated);
+        snprintf(thinningTmpFile, PATH_MAX, "%s/eroded.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_eroded);
+        snprintf(thinningTmpFile, PATH_MAX, "%s/extracted.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_extracted);
+        snprintf(thinningTmpFile, PATH_MAX, "%s/normalized.png", thinningTmpDir);
+        imwrite(thinningTmpFile, img_normalized);
+
+        /* calling montage command */
+        snprintf(montagedFile, PATH_MAX, "%s/montage.png", thinningTmpDir);
+        snprintf(montageCmd, 1024, "montage %s/*.png -tile x1 %s", thinningTmpDir, montagedFile);
+        if (system(montageCmd) != 0) {
+            returnCode = 3;
+            break;
+        }
+
+        /* return the generated image */
+        out_img = cv::imread(montagedFile);
+    } while(0);
+
+    /* clean up the temporary directory */
+    if (thinningTmpDir != NULL) {
+        snprintf(rmCmd, 1024, "rm -r %s", thinningTmpDir);
+        if (system(rmCmd) != 0) {
+            returnCode = 4;
+        }
+    }
+
+    /* free memory space */
+    free(dirTemplate);
+    free(thinningTmpFile);
+    free(rmCmd);
+    free(montageCmd);
+    free(montagedFile);
+
+    return returnCode;
+}
+
+/**
+ * check a image preprocessed in each step
+ *
+ * parameters: images in cv::Mat
+ *
+ * return: same return code from getMontagedImageAfterPreprocessing() function
+ */
+static int
+checkPreprocessedImage(const cv::Mat &img_src, const cv::Mat &img_bw, const cv::Mat &img_dilated, const cv::Mat &img_eroded, const cv::Mat &img_extracted, const cv::Mat &img_normalized)
+{
+    int retCode = 0;
+    cv::Mat montagedImage;
+
+    /* return if no command line options are specified */
+    if (showPreprocessedImageFlag != 1 && writePreprocessedImageFileName == NULL) {
+        return 1;
+    }
+
+    retCode = getMontagedImageAfterPreprocessing(montagedImage, img_src, img_bw, img_dilated, img_eroded, img_extracted, img_normalized);
+    if (retCode != 0 && retCode <= 3) {
+        return retCode;
+    }
+
+    if (showPreprocessedImageFlag == 1) {
+        cv::imshow("preprocessed image", montagedImage);
+        cv::waitKey(0);
+        cvDestroyAllWindows();
+    }
+    if (writePreprocessedImageFileName != NULL) {
+        imwrite(writePreprocessedImageFileName , montagedImage);
+    }
+
+    return retCode;
+}
+
+static void
+usage(char *cmdName)
+{
+    printf("%s [options] a-image-file\n", cmdName);
+    printf("\t--help\tshow usage\n");
+    printf("\t--show-image\tshow pre-processed images at each step\n");
+    printf("\t--write-image=imagefile\twrite preprocessed images to the file in each step\n");
+}
+
 int
 main(int argc, char *argv[])
 {
-  int features[N][N][ANGLES];
+    /* commandline option handling */
+    int optindex;
+    int optid;
+    struct option opts[] = {
+        { "help", no_argument, NULL, 'h'},
+        { "show-image", no_argument, NULL, 0},
+        { "write-image", required_argument, NULL, 1},
+        { 0, 0, 0, 0},
+    };
+    while ((optid = getopt_long(argc, argv, "h", opts, &optindex)) != -1) {
+        switch (optid) {
+            case 'h':
+                usage(argv[0]);
+                return 1;
+                break;
+            case 0:
+                showPreprocessedImageFlag = 1;
+                break;
+            case 1:
+                writePreprocessedImageFileName = optarg;
+                break;
+        }
+    }
 
-  printf("# %s\n", argv[1]);
-  return Extract_Feature_wrapper(argv[1], features);
+    printf("# %s\n", argv[optind]);
+#ifdef USE_CNN
+    cv::Mat img_src;
+    img_src = cv::imread(argv[optind]);
+    if (img_src.empty()) {
+        fprintf(stderr, "image file \"%s\": cannot be found.\n", argv[optind]);
+        return 1;
+    }
+    preprocessing_for_cnn(img_src);
+    return 0;
+#else
+    int features[N][N][ANGLES];
+    return Extract_Feature_wrapper(argv[optind], features);
+#endif /* USE_CNN */
 }
 #endif
 
