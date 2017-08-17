@@ -1302,6 +1302,10 @@ main(int argc, char *argv[])
         }
     }
 
+    if (argv[optind] == NULL) {
+        usage(argv[0]);
+        return 1;
+    }
     printf("# %s\n", argv[optind]);
 #ifdef USE_CNN
     cv::Mat img_src;
