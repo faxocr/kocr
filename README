@@ -54,7 +54,7 @@ $ make install PREFIX=/usr
 
  - 学習済みの重みファイルと読ませたい文字列を当てると、認識結果を返します
 
-$ ./kocr cnn_weights.txt ../images/samples/sample-img-6.pbm
+$ ./kocr ../databases/cnn-num.txt ../images/samples/sample-img-6.pbm
 
  - 学習済みの重みファイルを指定しなかった場合、現在のディレクトリの
  cnn_weights.txtを利用します
@@ -63,7 +63,7 @@ $ ./kocr ../images/samples/sample-img-6.pbm
 
  - 重みファイルと画像リストファイルを与えると性能評価を行います(未実装)
 
-$ ./kocr cnn_weights.txt ../images/faximg/list-num.txt
+$ ./kocr ../databases/cnn-num.txt ../images/faximg/list-num.txt
 
  学習及び重みファイルの作成についてはpythonを用いて行います(後述)
 
