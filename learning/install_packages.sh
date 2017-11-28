@@ -6,8 +6,8 @@ apt-get install python-dev -y
 pip install -U pillow
 pip install -U numpy
 pip install -U h5py
-pip install -U theano
-pip install -U keras
+pip install -U 'theano<1.0'
+pip install -U 'keras<2.0'
 
 python -c "import keras" 2>/dev/null
 
