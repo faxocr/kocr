@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt-get update -y
-apt-get install python-dev -y
+apt-get install python-dev libblas-dev -y
 
 pip install -U pillow
 pip install -U numpy
