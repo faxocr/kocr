@@ -107,7 +107,7 @@ public:
     virtual std::vector<int> get_input_shape() {return input_shape;}
     virtual std::vector<int> get_output_shape() {return output_shape;}
     virtual void set_input_shape(std::vector<int> shape) {input_shape = shape;}
-    virtual void load_weights(std::istringstream& ss){}
+    virtual void load_weights(std::ifstream& ifs){}
 
     virtual void print_weights() {}
 protected:
@@ -157,16 +157,10 @@ public:
         }
     }
 
-    virtual void load_weights(std::istringstream& ss){
-        assert(!ss.eof());
-        for(int i=0;i<n_in;i++){
-            for(int j=0;j<n_out;j++){
-                ss >> W.at(i, j);
-            }
-        }
-        for(int j=0;j<n_out;j++){
-            ss >> b.at(j);
-        }
+    virtual void load_weights(std::ifstream& ifs){
+        assert(!ifs.eof());
+        ifs.read(reinterpret_cast<char*>(W.data.data()), sizeof(float) * W.n);
+        ifs.read(reinterpret_cast<char*>(b.data.data()), sizeof(float) * b.n);
     }
 
 private:
@@ -188,8 +182,8 @@ public:
 
     virtual std::vector<int> get_output_shape() {
         assert(input_shape.size() == 3);
-        output_shape[1] = input_shape[1] - n_row/2*2;
-        output_shape[2] = input_shape[2] - n_col/2*2;
+        output_shape[1] = input_shape[1] - n_row + 1;
+        output_shape[2] = input_shape[2] - n_col + 1;
         assert(output_shape[1] > 0 && output_shape[2] > 0);
         return output_shape;
     }
@@ -197,10 +191,10 @@ public:
     virtual void build(){
         assert(input_shape.size() == 3);
         std::vector<int> filter_shape(4);
-        filter_shape[0] = output_shape[0];
-        filter_shape[1] = input_shape[0];
-        filter_shape[2] = n_row;
-        filter_shape[3] = n_col;
+        filter_shape[0] = n_row;
+        filter_shape[1] = n_col;
+        filter_shape[2] = input_shape[0];
+        filter_shape[3] = output_shape[0];
         filters = Tensor<float>(filter_shape);
         biases = Tensor<float>(output_shape[0]);
     }
@@ -209,46 +203,43 @@ public:
         std::vector<int> batch_shape = output_shape;
         batch_shape.insert(batch_shape.begin(), input.shape[0]);
         output = Tensor<float>(batch_shape);
+
         std::vector<int> input_idx(4), filter_idx(4);
         int opos = 0;
+
         for(int i=0;i<output.shape[0];i++){
             input_idx[0] = i;
-            for(int fo=0;fo<output.shape[1];fo++){
-                filter_idx[0] = fo;
-                for(int ro=0;ro<output.shape[2];ro++){
-                    for(int co=0;co<output.shape[3];co++){
+            for(int output_ch=0;output_ch<output.shape[1];output_ch++){
+                filter_idx[3] = output_ch;
+                for(int output_r=0;output_r<output.shape[2];output_r++){
+                    for(int output_c=0;output_c<output.shape[3];output_c++){
                         float sum = 0;
-                        for(int fi=0;fi<input.shape[1];fi++){
-                            input_idx[1] = input_idx[0] * input.shape[1] + fi;
-                            filter_idx[1] = filter_idx[0] * filters.shape[1] + fi;
+                        for(int input_ch=0;input_ch<input.shape[1];input_ch++){
+                            filter_idx[2] = input_ch;
+                            input_idx[1] = input_ch;
                             for(int rk=0;rk<n_row;rk++){
-                                assert(ro + rk < input.shape[2]);
-                                input_idx[2] = input_idx[1] * input.shape[2] + ro + n_row - 1 - rk;
-                                input_idx[3] = input_idx[2] * input.shape[3] + co + n_col - 1;
-                                filter_idx[2] = filter_idx[1] * n_row + rk;
-                                filter_idx[3] = filter_idx[2] * n_col;
+                                filter_idx[0] = n_row - rk - 1;
+                                input_idx[2] = output_r + rk;
                                 for(int ck=0;ck<n_col;ck++){
-                                    assert(co + ck < input.shape[3]);
-                                    sum += filters.ix(filter_idx[3]++) * input.ix(input_idx[3]--);
+                                    filter_idx[1] = n_col - ck - 1;
+                                    input_idx[3] = output_c + ck;
+                                    sum += filters.at(filter_idx) * input.at(input_idx);
                                 }
                             }
                         }
-                        output.ix(opos++) = sum + biases.at(fo);
+                        output.ix(opos++) = sum + biases.at(output_ch);
                     }
                 }
             }
         }
+
         assert(opos == output.n);
     }
 
-    virtual void load_weights(std::istringstream& ss){
-        assert(!ss.eof());
-        for(int i=0;i<filters.n;i++){
-            ss >> filters.ix(i);
-        }
-        for(int i=0;i<biases.n;i++){
-            ss >> biases.ix(i);
-        }
+    virtual void load_weights(std::ifstream& ifs){
+        assert(!ifs.eof());
+        ifs.read(reinterpret_cast<char*>(filters.data.data()), sizeof(float) * filters.n);
+        ifs.read(reinterpret_cast<char*>(biases.data.data()), sizeof(float) * biases.n);
     }
 
 private:
@@ -430,32 +421,43 @@ public:
         }
     }
 
-    void load_weights(std::string filename){
-        std::ifstream ifs(filename.c_str(), std::ifstream::in);
-        std::string line;
-        std::getline(ifs, line);
-        std::istringstream ss(line);
+    void load_weights(std::ifstream& ifs){
         for(int i=0;i<layers.size();i++){
-            layers[i]->load_weights(ss);
+            layers[i]->load_weights(ifs);
         }
         load_completed = true;
     }
 
-    void load_weights(std::istringstream& ss){
-        for(int i=0;i<layers.size();i++){
-            layers[i]->load_weights(ss);
-        }
-        load_completed = true;
+    // void load_weights(std::string filename){
+    //     std::ifstream ifs(filename.c_str(), std::ifstream::in);
+    //     std::string line;
+    //     std::getline(ifs, line);
+    //     std::istringstream ss(line);
+    //     for(int i=0;i<layers.size();i++){
+    //         layers[i]->load_weights(ss);
+    //     }
+    //     load_completed = true;
+    // }
+
+    // void load_weights(std::istringstream& ss){
+    //     for(int i=0;i<layers.size();i++){
+    //         layers[i]->load_weights(ss);
+    //     }
+    //     load_completed = true;
+    // }
+
+    void set_label(std::vector<std::string> output_labels){
+        labels = output_labels;
     }
 
-    void set_label(int nb_classes, std::istringstream&ss){
-        labels.resize(nb_classes);
-        for(int i=0;i<nb_classes;i++){
-            assert(!ss.eof());
-            ss >> labels[i];
-        }
-        label_set = true;
-    }
+    // void set_label(int nb_classes, std::istringstream&ss){
+    //     labels.resize(nb_classes);
+    //     for(int i=0;i<nb_classes;i++){
+    //         assert(!ss.eof());
+    //         ss >> labels[i];
+    //     }
+    //     label_set = true;
+    // }
 
     Tensor<float> predict(Tensor<float>& X){
         layers[0]->forward(X);
