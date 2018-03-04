@@ -1,4 +1,5 @@
 #include <vector>
+#include <string>
 #include <string.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -119,20 +120,28 @@ char *recog_image(Network *net, IplImage *src_img){
     return result;
 }
 
+int read_int(std::ifstream& ifs){
+    int n;
+    ifs.read(reinterpret_cast<char*>(&n), sizeof(int));
+    return n;
+}
 
 Network *kocr_cnn_init(char *filename){
-    Network *net;
-
     if (filename == NULL)
         return (Network *) NULL;
 
-    std::ifstream ifs(filename, std::ifstream::in);
-    std::string line;
-    std::getline(ifs, line);
-    std::istringstream ss(line);
-    int nb_classes;
-    ss >> nb_classes;
+    std::ifstream ifs(filename);
+    int nb_classes = read_int(ifs);
 
+    std::vector<std::string> unique_labels(nb_classes);
+    for(int i=0;i<nb_classes;i++){
+        int str_len = read_int(ifs);
+        std::vector<char> str(str_len);
+        ifs.read(str.data(), sizeof(char) * str_len);
+        unique_labels[i].assign(str.begin(), str.end());
+    }
+
+    Network *net;
     net = new Network();
 
     std::vector<int> input_shape(3);
@@ -164,8 +173,8 @@ Network *kocr_cnn_init(char *filename){
     net->add(new Softmax());
 
     net->build();
-    net->load_weights(ss);
-    net->set_label(nb_classes, ss);
+    net->load_weights(ifs);
+    net->set_label(unique_labels);
 
     return net;
 }
