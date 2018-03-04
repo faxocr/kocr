@@ -1,5 +1,5 @@
 import numpy as np
-np.random.seed(71)
+np.random.seed(1024)
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Dropout
@@ -11,10 +11,11 @@ from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
 
 import struct
+import sys
 
 
-def load_data():
-    X, labels = np.load('num_images.npy'), np.load('num_labels.npy')
+def load_data(prefix):
+    X, labels = np.load(prefix + 'images.npy'), np.load(prefix + 'labels.npy')
     X = X.astype(np.float32).reshape([-1, 1, nb_dim, nb_dim]) / 255
     y = np.zeros(labels.shape)
     unique_label = np.unique(labels)
@@ -68,8 +69,10 @@ if __name__ == '__main__':
     batch_size = 128
     nb_epoch = 200
 
+    prefix = sys.argv[1] if len(sys.argv) == 2 else ''
+
     print 'Load data'
-    X, y, unique_label = load_data()
+    X, y, unique_label = load_data(prefix)
     n = X.shape[0]
 
     print 'Split data into train set and validation set'
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     n_train = int(n * 0.9) / batch_size * batch_size
     X_train, y_train = X[idx[:n_train]], y[idx[:n_train]]
     X_valid, y_valid = X[idx[n_train:]], y[idx[n_train:]]
-    steps_per_epoch = 10 * n_train / batch_size
+    steps_per_epoch = n_train / batch_size
 
     print 'Build model'
     model = build_model(nb_dim, len(unique_label))
@@ -86,9 +89,9 @@ if __name__ == '__main__':
                 metrics=['accuracy'])
 
     print 'Fit'
-    earlystopping = EarlyStopping(monitor='val_loss', patience=10)
-    checkpointer = ModelCheckpoint(filepath='weights.hdf5',
-                                verbose=0, save_best_only=True)
+    earlystopping = EarlyStopping(monitor='val_loss', patience=1000)
+    checkpointer = ModelCheckpoint(filepath=prefix + 'weights.hdf5',
+                                   verbose=0, save_best_only=True)
 
     datagen = ImageDataGenerator(
         zoom_range=[0.9, 1.05],
@@ -100,8 +103,8 @@ if __name__ == '__main__':
                         callbacks=[earlystopping, checkpointer],
                         epochs=nb_epoch, verbose=1)
 
-    model.load_weights('weights.hdf5')
-    print 'Testing on keras:', (model.predict_classes(X) == y.argmax(axis=1)).mean()
+    model.load_weights(prefix + 'weights.hdf5')
+    print 'Testing on keras:', (model.predict_classes(X_valid) == y_valid.argmax(axis=1)).mean()
 
     print 'Dump results to binary'
-    dump_weights('cnn-result.bin', model, unique_label)
+    dump_weights(prefix + 'cnn-result.bin', model, unique_label)
