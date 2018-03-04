@@ -448,6 +448,7 @@ public:
 
     void set_label(std::vector<std::string> output_labels){
         labels = output_labels;
+	label_set = true;
     }
 
     // void set_label(int nb_classes, std::istringstream&ss){
