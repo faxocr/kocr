@@ -428,37 +428,10 @@ public:
         load_completed = true;
     }
 
-    // void load_weights(std::string filename){
-    //     std::ifstream ifs(filename.c_str(), std::ifstream::in);
-    //     std::string line;
-    //     std::getline(ifs, line);
-    //     std::istringstream ss(line);
-    //     for(int i=0;i<layers.size();i++){
-    //         layers[i]->load_weights(ss);
-    //     }
-    //     load_completed = true;
-    // }
-
-    // void load_weights(std::istringstream& ss){
-    //     for(int i=0;i<layers.size();i++){
-    //         layers[i]->load_weights(ss);
-    //     }
-    //     load_completed = true;
-    // }
-
     void set_label(std::vector<std::string> output_labels){
         labels = output_labels;
-	label_set = true;
+        label_set = true;
     }
-
-    // void set_label(int nb_classes, std::istringstream&ss){
-    //     labels.resize(nb_classes);
-    //     for(int i=0;i<nb_classes;i++){
-    //         assert(!ss.eof());
-    //         ss >> labels[i];
-    //     }
-    //     label_set = true;
-    // }
 
     Tensor<float> predict(Tensor<float>& X){
         layers[0]->forward(X);
