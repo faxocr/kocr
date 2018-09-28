@@ -53,21 +53,22 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
      * Resizing
      */
     const int pad = 3; // 余白の大きさ (px)
+    const int size = 48; // 一片の大きさ (px)
 
-    double ratio = (SIZE_NORMALIZED - 2 * pad) / double(std::max(img_crop.size().width, img_crop.size().height));
-    int method = ratio < 1 ? INTER_AREA : INTER_LINEAR;
+    double ratio = (size - 2 * pad) / double(std::max(img_crop.size().width, img_crop.size().height));
+    int method = ratio < 1 ? cv::INTER_AREA : cv::INTER_LINEAR;
     cv::Mat img_resize;
     resize(img_crop, img_resize, cv::Size(), ratio, ratio, method);
 
     /*
      * Padding
      */
-    int top = (SIZE_NORMALIZED - img_resize.size().height) / 2;
-    int bottom = SIZE_NORMALIZED - img_resize.size().height - top;
-    int left = (SIZE_NORMALIZED - img_resize.size().width) / 2;
-    int right = SIZE_NORMALIZED - img_resize.size().width - left;
+    int top = (size - img_resize.size().height) / 2;
+    int bottom = size - img_resize.size().height - top;
+    int left = (size - img_resize.size().width) / 2;
+    int right = size - img_resize.size().width - left;
     cv::Mat img_pad;
-    cv::copyMakeBorder(img_resize, img_pad, img, top, bottom, left, right, cv::BORDER_CONSTANT, 0);
+    cv::copyMakeBorder(img_resize, img_pad, top, bottom, left, right, cv::BORDER_CONSTANT, 0);
 
 #ifdef DEBUG
     t = (double)cvGetTickCount() - t;
