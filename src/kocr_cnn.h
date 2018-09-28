@@ -4,7 +4,6 @@
 #define THRES_RATIO 2
 #define MAXSTRLEN 1024
 
-// Implemented in thinning.cpp
 cv::Mat preprocessing_for_cnn(cv::Mat);
 
 char *recognize(Network *, IplImage *);
