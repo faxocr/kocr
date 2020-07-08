@@ -1,8 +1,13 @@
 #include <vector>
 #include <string>
 #include <string.h>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <opencv/cv.hpp>
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 2
+#include <opencv2/highgui/highgui.hpp>
+#elif CV_MAJOR_VERSION == 3
+#include <opencv2/highgui.hpp>
+#endif
 
 #include "forward_cnn.h"
 #include "cropnums.h"
