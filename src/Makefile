@@ -15,7 +15,7 @@ SOLVER = CNN
 
 
 ifeq ($(SOLVER), CNN)
-	LIB_OBJS      = kocr_cnn.o cropnums.o thinning.o
+	LIB_OBJS      = kocr_cnn.o cropnums.o
 	CFLAGS_SOLVER = -DUSE_CNN -DTHINNING
 else ifeq ($(SOLVER), SVM)
 	LIB_OBJS      = kocr.o subr.o cropnums.o thinning.o
@@ -32,8 +32,8 @@ thin:
 	libtool --mode=compile $(CXX) -DTHINNING_MAIN -c $(CFLAGS) $(CFLAGS_SOLVER) $(CFLAGS_OPENCV) thinning.cpp
 	libtool --mode=link $(CXX) -o thin thinning.o $(LDFLAGS_OPENCV) $(LDFLAGS)
 
-preprocess: thinning.o preprocess.o
-	libtool --mode=link $(CXX) -o preprocess thinning.o preprocess.o $(LDFLAGS_OPENCV)
+preprocess: kocr_cnn.o preprocess.o cropnums.o
+	libtool --mode=link $(CXX) -o preprocess cropnums.o kocr_cnn.o preprocess.o $(LDFLAGS_OPENCV)
 
 install: all
 	-(for dir in bin include lib; do mkdir -p $(PREFIX)/$$dir; done)

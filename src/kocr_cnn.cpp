@@ -1,4 +1,5 @@
 #include <vector>
+#include <string>
 #include <string.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -6,6 +7,76 @@
 #include "forward_cnn.h"
 #include "cropnums.h"
 #include "kocr_cnn.h"
+
+
+cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
+
+#ifdef DEBUG
+    double       t;
+    t = (double)cvGetTickCount();
+#endif
+
+    /*
+     * 白黒画像取得
+     */
+    cv::Mat img_bw = img_src.clone();
+
+    if (img_src.channels() > 1) {
+      cv::cvtColor(img_bw, img_bw, CV_BGR2GRAY);
+    }
+    cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY_INV);
+
+    /*
+     * Cropping
+     */
+    int x_max = -1, x_min = img_bw.size().width;
+    int y_max = -1, y_min = img_bw.size().height;
+    for(int i=0;i<img_bw.size().height;i++){
+      for(int j=0;j<img_bw.size().width;j++){
+        if(img_bw.at<uchar>(i, j) > 0){
+          x_max = std::max(x_max, j);
+          x_min = std::min(x_min, j);
+          y_max = std::max(y_max, i);
+          y_min = std::min(y_min, i);
+        }
+      }
+    }
+
+    if(x_max == -1){
+      // 0以上のピクセルが1つも存在しなかった．
+      return cv::Mat();
+    }
+
+    cv::Mat img_crop = img_bw(cv::Rect(x_min, y_min, x_max - x_min + 1, y_max - y_min + 1)).clone();
+
+    /*
+     * Resizing
+     */
+    const int pad = 3; // 余白の大きさ (px)
+    const int size = 48; // 一片の大きさ (px)
+
+    double ratio = (size - 2 * pad) / double(std::max(img_crop.size().width, img_crop.size().height));
+    int method = ratio < 1 ? cv::INTER_AREA : cv::INTER_LINEAR;
+    cv::Mat img_resize;
+    resize(img_crop, img_resize, cv::Size(), ratio, ratio, method);
+
+    /*
+     * Padding
+     */
+    int top = (size - img_resize.size().height) / 2;
+    int bottom = size - img_resize.size().height - top;
+    int left = (size - img_resize.size().width) / 2;
+    int right = size - img_resize.size().width - left;
+    cv::Mat img_pad;
+    cv::copyMakeBorder(img_resize, img_pad, top, bottom, left, right, cv::BORDER_CONSTANT, 0);
+
+#ifdef DEBUG
+    t = (double)cvGetTickCount() - t;
+    printf("%gms\n", t / ((double) cvGetTickFrequency() * 1000.0));
+#endif
+
+    return img_pad;
+}
 
 
 char *recognize(Network *net, IplImage *src_img){
@@ -119,20 +190,28 @@ char *recog_image(Network *net, IplImage *src_img){
     return result;
 }
 
+int read_int(std::ifstream& ifs){
+    int n;
+    ifs.read(reinterpret_cast<char*>(&n), sizeof(int));
+    return n;
+}
 
 Network *kocr_cnn_init(char *filename){
-    Network *net;
-
     if (filename == NULL)
         return (Network *) NULL;
 
-    std::ifstream ifs(filename, std::ifstream::in);
-    std::string line;
-    std::getline(ifs, line);
-    std::istringstream ss(line);
-    int nb_classes;
-    ss >> nb_classes;
+    std::ifstream ifs(filename);
+    int nb_classes = read_int(ifs);
 
+    std::vector<std::string> unique_labels(nb_classes);
+    for(int i=0;i<nb_classes;i++){
+        int str_len = read_int(ifs);
+        std::vector<char> str(str_len);
+        ifs.read(str.data(), sizeof(char) * str_len);
+        unique_labels[i].assign(str.begin(), str.end());
+    }
+
+    Network *net;
     net = new Network();
 
     std::vector<int> input_shape(3);
@@ -140,23 +219,22 @@ Network *kocr_cnn_init(char *filename){
     input_shape[1] = 48;
     input_shape[2] = 48;
 
-    net->add(new Convolution2D(32, 9, 9, input_shape));
+    net->add(new Convolution2D(32, 5, 5, input_shape));
+    net->add(new Relu());
+    net->add(new Convolution2D(32, 5, 5));
     net->add(new Relu());
     net->add(new MaxPooling2D(2, 2));
     net->add(new Dropout(0.5));
 
-    net->add(new Convolution2D(64, 5, 5));
+    net->add(new Convolution2D(64, 3, 3));
+    net->add(new Relu());
+    net->add(new Convolution2D(64, 3, 3));
     net->add(new Relu());
     net->add(new MaxPooling2D(2, 2));
-    net->add(new Dropout(0.5));
-
-    net->add(new Convolution2D(128, 3, 3));
-    net->add(new Relu());
-    net->add(new MaxPooling2D(2, 2));
-    net->add(new Dropout(0.5));
+    net->add(new Dropout(0.25));
 
     net->add(new Flatten());
-    net->add(new Dense(128));
+    net->add(new Dense(256));
     net->add(new Relu());
     net->add(new Dropout(0.5));
 
@@ -164,8 +242,8 @@ Network *kocr_cnn_init(char *filename){
     net->add(new Softmax());
 
     net->build();
-    net->load_weights(ss);
-    net->set_label(nb_classes, ss);
+    net->load_weights(ifs);
+    net->set_label(unique_labels);
 
     return net;
 }
