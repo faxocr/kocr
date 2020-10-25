@@ -148,24 +148,24 @@ if __name__ == '__main__':
     parser.add_argument('--nb_epoch', type=int, default=200)
     args = parser.parse_args()
 
-    print 'Load data'
+    print ('Load data')
     X, y, unique_label = load_data(args.train_dirs, args.nb_dim)
     n = X.shape[0]
 
-    print 'Split data into train set and validation set'
+    print ('Split data into train set and validation set')
     idx = np.random.permutation(n)
-    n_train = int(n * 0.9) / args.batch_size * args.batch_size
+    n_train = int(int(n * 0.9) / args.batch_size) * args.batch_size
     X_train, y_train = X[idx[:n_train]], y[idx[:n_train]]
     X_valid, y_valid = X[idx[n_train:]], y[idx[n_train:]]
     steps_per_epoch = n_train / args.batch_size
 
-    print 'Build model'
+    print ('Build model')
     model = build_model(args.nb_dim, len(unique_label))
     opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
     model.compile(loss='categorical_crossentropy', optimizer=opt,
                 metrics=['accuracy'])
 
-    print 'Fit'
+    print ('Fit')
     earlystopping = EarlyStopping(monitor='val_loss', patience=1000)
     checkpointer = ModelCheckpoint(filepath=args.dump_prefix + 'weights.hdf5',
                                    verbose=0, save_best_only=True)
@@ -184,13 +184,13 @@ if __name__ == '__main__':
                         epochs=args.nb_epoch, verbose=1)
     model.load_weights(args.dump_prefix + 'weights.hdf5')
 
-    print 'Dump results to binary'
+    print ('Dump results to binary')
     dump_weights(args.dump_prefix + 'cnn-result.bin', model, unique_label)
 
-    print 'Testing on validation set:', (model.predict_classes(X_valid) == y_valid.argmax(axis=1)).mean()
+    print ('Testing on validation set:', (model.predict_classes(X_valid) == y_valid.argmax(axis=1)).mean())
     for test_dir in args.test_dirs:
         X_test, y_test, unique_label_test = load_data([test_dir], args.nb_dim)
         y_test = unique_label_test[y_test.argmax(axis=1)]
         y_pred = unique_label[model.predict_classes(X_test)]
-        print 'Testing on {}: {}'.format(test_dir, (y_test == y_pred).mean())
+        print ('Testing on {}: {}'.format(test_dir, (y_test == y_pred).mean()))
 
