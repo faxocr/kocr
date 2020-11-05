@@ -32,7 +32,9 @@ def load_data(input_dirs, nb_dim, pad=3):
         for name in os.listdir(input_dir):
             if not name.endswith('.png'):
                 continue
-            img = cv.imread(input_dir + name, 0)
+            img = cv.imread(os.path.join(input_dir, name), 0)
+            if img is None:
+                continue
 
             # Thresholding
             img = cv.threshold(img, 255 * 0.7, 255, cv.THRESH_BINARY_INV)[1]
@@ -92,7 +94,7 @@ def dump_weights(filename, model, unique_label):
     for label in unique_label:
         b += struct.pack('i', len(label))
         for c in label:
-            b += struct.pack('c', c)
+            b += struct.pack('c', bytes(c, 'utf-8'))
     for layer in model.layers:
         for w in layer.get_weights():
             for v in w.astype(np.float32).reshape(-1):
@@ -160,6 +162,8 @@ if __name__ == '__main__':
     steps_per_epoch = n_train / args.batch_size
 
     print ('Build model')
+    # set image data format to "channels, conv_dim1, conv_dim2, conv_dim3".
+    keras.backend.set_image_data_format('channels_first')
     model = build_model(args.nb_dim, len(unique_label))
     opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
     model.compile(loss='categorical_crossentropy', optimizer=opt,

@@ -103,7 +103,7 @@ usage()
     printf(" kocr\tweights-file target\t\tRecognize characters in target\n");
     printf("\n");
 
-    printf("\tweights-file: *.txt\n");
+    printf("\tweights-file: *.bin\n");
 #else
     printf(" kocr\timage-list\t\tCreates a database file\n");
     printf("\tdatabase-file\t\tEvaluates a database file\n");
