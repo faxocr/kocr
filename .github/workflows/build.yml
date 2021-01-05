@@ -1,0 +1,23 @@
+name: build
+on:
+  push:
+    paths:
+      - 'src/*'
+  pull_request:
+    paths:
+      - 'src/*'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-16.04, ubuntu-18.04 ]
+        solver: [ CNN, NN ]
+        include:
+          - os: ubuntu-16.04
+            solver: SVM
+    steps:
+      - run: sudo apt-get install -y libtool-bin libopencv-dev
+      - uses: actions/checkout@v2
+      - run: (cd src && make SOLVER=${{ matrix.solver }} library all && sudo make SOLVER=${{ matrix.solver }} install)
