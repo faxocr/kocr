@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012, Masahiko KIMOTO, Ph.D. <kimoto@ohnolab.org>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -38,12 +38,12 @@
 CvRect
 findBB(IplImage * imgSrc)
 {
-    int		    minX  , minY, maxX, maxY;
-    CvScalar	    s , white;
-    int		    x     , y;
-    CvRect	    rect;
+    int         minX, minY, maxX, maxY;
+    CvScalar        s, white;
+    int         x, y;
+    CvRect      rect;
 
-    white = cvGet2D(imgSrc, 0, 0);	/* XXX */
+    white = cvGet2D(imgSrc, 0, 0);  /* XXX */
 
     minX = imgSrc->width;
     minY = imgSrc->height;
@@ -51,21 +51,21 @@ findBB(IplImage * imgSrc)
     maxY = 0;
 
     for (x = 0; x < imgSrc->width - 1; x++) {
-	for (y = 0; y < imgSrc->height - 1; y++) {
-	    s = cvGet2D(imgSrc, y, x);
-	    if (s.val[0] != white.val[0]) {
-		minX = min(minX, x);
-		minY = min(minY, y);
-		maxX = max(maxX, x);
-		maxY = max(maxY, y);
-	    }
-	}
+        for (y = 0; y < imgSrc->height - 1; y++) {
+            s = cvGet2D(imgSrc, y, x);
+            if (s.val[0] != white.val[0]) {
+                minX = min(minX, x);
+                minY = min(minY, y);
+                maxX = max(maxX, x);
+                maxY = max(maxY, y);
+            }
+        }
     }
     if (minX == imgSrc->width && minY == imgSrc->height &&
-	maxX == 0 && maxY == 0) { /* when all white */
-	rect = cvRect(0, 0, imgSrc->width, imgSrc->height);
+            maxX == 0 && maxY == 0) { /* when all white */
+        rect = cvRect(0, 0, imgSrc->width, imgSrc->height);
     } else {
-	rect = cvRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        rect = cvRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
     return rect;
 }
@@ -74,14 +74,14 @@ IplImage       *
 cropnum(IplImage * src_img, int startx, int *nextstart)
 {
     IplImage       *result;
-    CvMat	    dataA;
-    CvRect	    bba , rect;
+    CvMat       dataA;
+    CvRect      bba, rect;
     //bounding box
-	CvScalar maxVal;
-    CvScalar	    val = cvRealScalar(0);
+    CvScalar maxVal;
+    CvScalar        val = cvRealScalar(0);
 
-    int		    size  , x, y;
-    int		    allwhite, state;
+    int         size, x, y;
+    int         allwhite, state;
 
     state = 0;
     bba.y = 0;
@@ -90,58 +90,58 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
     bba.width = src_img->width - startx;
 
     if (startx >= src_img->width)
-	return NULL;
+        return NULL;
 
     maxVal = cvRealScalar(src_img->height * ((1 << (src_img->depth)) - 1));
 
     for (x = startx; x < src_img->width; x++) {
-	CvMat		data;
+        CvMat       data;
 #ifdef DEBUG
-	printf("x:%d %d\n", x, src_img->width);
+        printf("x:%d %d\n", x, src_img->width);
 #endif
-	cvGetCol(src_img, &data, x);
-	val = cvSum(&data);
+        cvGetCol(src_img, &data, x);
+        val = cvSum(&data);
 
 #ifdef DEBUG
-	printf("val %d/%d\n", (int)val.val[0], (int)maxVal.val[0]);
+        printf("val %d/%d\n", (int)val.val[0], (int)maxVal.val[0]);
 #endif
 
-	if ((val.val[0] * 100) < (maxVal.val[0] * BWNOISE_THRESHOLD)) {
-	    /* black is present in this columun */
-	    allwhite = 0;
-	} else {
-	    /* the line is almost white */
-	    allwhite = 1;
-	}
+        if ((val.val[0] * 100) < (maxVal.val[0] * BWNOISE_THRESHOLD)) {
+            /* black is present in this columun */
+            allwhite = 0;
+        } else {
+            /* the line is almost white */
+            allwhite = 1;
+        }
 
-	if (state == 0 && allwhite == 1) {
-	    bba.x = x;
-	    continue;
-	}
-	if (state == 0 && allwhite == 0) {
-	    state = 1;
-	    bba.x = x;
-	    continue;
-	}
-	if (state == 1 && allwhite == 1) {
-	    bba.width = (x - bba.x);
-	    break;
-	}
-	if (state == 1 && allwhite == 0) {
-	    bba.width = (x - bba.x);
-	    continue;
-	}
+        if (state == 0 && allwhite == 1) {
+            bba.x = x;
+            continue;
+        }
+        if (state == 0 && allwhite == 0) {
+            state = 1;
+            bba.x = x;
+            continue;
+        }
+        if (state == 1 && allwhite == 1) {
+            bba.width = (x - bba.x);
+            break;
+        }
+        if (state == 1 && allwhite == 0) {
+            bba.width = (x - bba.x);
+            continue;
+        }
     }
     if (state == 0)
-	return NULL;
+        return NULL;
 
     *nextstart = x;
 
     //bba is rectangle of a Number
 #ifdef DEBUG
-	printf("BB: %d,%d - %d,%d from %d,%d\n",
-	       bba.x, bba.y, bba.width, bba.height,
-	       src_img->width, src_img->height);
+    printf("BB: %d,%d - %d,%d from %d,%d\n",
+           bba.x, bba.y, bba.width, bba.height,
+           src_img->width, src_img->height);
 #endif
 
     cvSetImageROI(src_img, bba);
@@ -149,26 +149,26 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
     rect = cvGetImageROI(src_img);
 #ifdef DEBUG
     printf("src:  x=%d, y=%d, width=%d, height=%d\n",
-	   rect.x, rect.y,
-	   rect.width, rect.height);
+           rect.x, rect.y,
+           rect.width, rect.height);
 #endif
 
     //create a image with bba
-	result = cvCreateImage(cvSize(rect.width, rect.height),
-			       src_img->depth, src_img->nChannels);
+    result = cvCreateImage(cvSize(rect.width, rect.height),
+                           src_img->depth, src_img->nChannels);
 
     if (result == NULL)
-	return NULL;
+        return NULL;
 
     cvSet(result, CV_RGB(255, 255, 255), NULL);
 
 #ifdef DEBUG
     printf("dst: depth=%d, width=%d, height=%d\n",
-	   result->depth, result->width, result->height);
+           result->depth, result->width, result->height);
 #endif
 
     //copy rectangle part of src_img to result image
-	cvCopy(src_img, result, NULL);
+    cvCopy(src_img, result, NULL);
     cvResetImageROI(src_img);
 
     return result;
@@ -178,13 +178,13 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
 static void
 do_split(IplImage * src_img)
 {
-    CvRect	    bb;
+    CvRect      bb;
     IplImage       *part_img, *body;
-    int		    seqnum, startx, width, nextstart;
-    char	    filename[BUFSIZ];
+    int         seqnum, startx, width, nextstart;
+    char        filename[BUFSIZ];
 
     //crop with BB of all chars
-	bb = findBB(src_img);
+    bb = findBB(src_img);
     body = cvCreateImage(cvSize(bb.width, bb.height), src_img->depth, 1);
     cvSet(body, CV_RGB(255, 255, 255), NULL);
     cvSetImageROI(src_img, bb);
@@ -196,18 +196,18 @@ do_split(IplImage * src_img)
     width = body->width;
 
     while (startx < width) {
-	part_img = cropnum(body, startx, &nextstart);
-	if (part_img == NULL || part_img->width == 0)
-	    break;
+        part_img = cropnum(body, startx, &nextstart);
+        if (part_img == NULL || part_img->width == 0)
+            break;
         //NOTE:do something other than saving image here
 #ifdef DEBUG
-	sprintf(filename, "file%03d.png", seqnum);
-	cvSaveImage(filename, part_img, 0);
+        sprintf(filename, "file%03d.png", seqnum);
+        cvSaveImage(filename, part_img, 0);
 #endif
 
-	startx = nextstart;
-	seqnum++;
-	cvReleaseImage(&part_img);
+        startx = nextstart;
+        seqnum++;
+        cvReleaseImage(&part_img);
     }
 }
 
@@ -222,44 +222,44 @@ int
 main(int argc, char **argv)
 {
     IplImage       *src_img = NULL, *dst_img = NULL;
-    int		    newwidth = 0;
+    int         newwidth = 0;
     IplImage       *prs_img;
-    
+
     if (argc < 2) {
-	fprintf(stderr, "usage: cropnums inputfile\n");
-	exit(1);
+        fprintf(stderr, "usage: cropnums inputfile\n");
+        exit(1);
     }
-    
+
     src_img = cvLoadImage(argv[1], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR
-	);
+                         );
     if (src_img == NULL)
-	err_exit();
-    
+        err_exit();
+
     dst_img = cvCreateImage(cvSize(src_img->width, src_img->height),
-			    8, 1);
+                            8, 1);
 #if 0
     //pre - processing
     {
-	IplImage       *grayImage;
-	IplImage       *binImage;
-	
-	grayImage = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
-	binImage = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
-	
-	//cvCvtColor(src_img, grayImage, CV_BGR2GRAY);
-	cvDilate(src_img, grayImage, NULL, 1);
-	cvSmooth(grayImage, grayImage, CV_GAUSSIAN, 21, 21, 0, 0);
-	cvThreshold(grayImage, binImage, 120, 255, CV_THRESH_BINARY);
-	cvNormalize(binImage, dst_img, 0, 1, CV_MINMAX, 0);
+        IplImage       *grayImage;
+        IplImage       *binImage;
+
+        grayImage = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
+        binImage = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
+
+        //cvCvtColor(src_img, grayImage, CV_BGR2GRAY);
+        cvDilate(src_img, grayImage, NULL, 1);
+        cvSmooth(grayImage, grayImage, CV_GAUSSIAN, 21, 21, 0, 0);
+        cvThreshold(grayImage, binImage, 120, 255, CV_THRESH_BINARY);
+        cvNormalize(binImage, dst_img, 0, 1, CV_MINMAX, 0);
     }
 #endif
-    
+
     cvThreshold(src_img, dst_img, 120, 255, CV_THRESH_BINARY);
     //dst_img is BW format
     do_split(dst_img);
-    
+
     cvReleaseImage(&src_img);
-    
+
     return 1;
 }
 

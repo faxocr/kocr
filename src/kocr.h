@@ -42,7 +42,7 @@ int Extract_Feature(cv::Mat, int [N][N][ANGLES]);
 #define X_SIZE 16
 #endif
 
-#define FG 0 
+#define FG 0
 #define BG 255
 #define SETS 160
 #define TESTS 1
@@ -63,41 +63,41 @@ int Extract_Feature(cv::Mat, int [N][N][ANGLES]);
 #undef DEBUG_FILE
 #undef DEBUG_DISPLAY
 
-typedef struct 
+typedef struct
 {
-	short x;
-	short y;
+    short x;
+    short y;
 } Contour;
 
-typedef struct 
+typedef struct
 {
-	unsigned char      I;			//輝度値ヒストグラム?
+    unsigned char      I;           //輝度値ヒストグラム?
 #ifdef THINNING
-	unsigned char      d[ANGLES] ; 		//方向特徴ヒストグラム?
+    unsigned char      d[ANGLES] ;      //方向特徴ヒストグラム?
 #else
-	unsigned char      d[4] ; 		//方向特徴ヒストグラム?
+    unsigned char      d[4] ;       //方向特徴ヒストグラム?
 #endif
 } DIRP;
 
-typedef struct 
+typedef struct
 {
-	double      I;		
-	double      d[4]; 
+    double      I;
+    double      d[4];
 } DIRP_D;
 
 typedef struct
 {
-	int magic;			//データベース識別のための変数
-	int nitems;			//データベースの画像数
-	int feature_offset;		//データベースの特徴量の保存場所の先頭
-	int class_offset;		//データベースのクラスの保存場所の先頭
+    int magic;          //データベース識別のための変数
+    int nitems;         //データベースの画像数
+    int feature_offset;     //データベースの特徴量の保存場所の先頭
+    int class_offset;       //データベースのクラスの保存場所の先頭
 } feature_db;
 
 typedef struct
 {
-	DIRP Data[N][N];
-	int	status;
-} datafolder;		//1つのファイルを画像のピクセルごとに保存
+    DIRP Data[N][N];
+    int status;
+} datafolder;       //1つのファイルを画像のピクセルごとに保存
 
 #ifdef _KOCR_MAIN
 
@@ -111,15 +111,15 @@ typedef struct
 extern "C" {
 #endif
 #ifdef USE_SVM
-	_EX_DECL char *recognize(CvSVM *, IplImage *);
+_EX_DECL char *recognize(CvSVM *, IplImage *);
 #else
-	_EX_DECL char *recognize(feature_db *, IplImage *);
+_EX_DECL char *recognize(feature_db *, IplImage *);
 #endif
 
 #ifdef USE_SVM
-	_EX_DECL char *recognize_multi(CvSVM *, IplImage *);
+_EX_DECL char *recognize_multi(CvSVM *, IplImage *);
 #else
-	_EX_DECL char *recognize_multi(feature_db *, IplImage *);
+_EX_DECL char *recognize_multi(feature_db *, IplImage *);
 #endif
 
 _EX_DECL char *conv_fname(char *, const char *);
@@ -127,27 +127,27 @@ _EX_DECL int is_database(const char *);
 _EX_DECL int is_opencvxml(const char *);
 
 #ifdef USE_SVM
-	_EX_DECL CvSVM *training(char *);
-	_EX_DECL void leave_one_out_test(feature_db *, char *);
+_EX_DECL CvSVM *training(char *);
+_EX_DECL void leave_one_out_test(feature_db *, char *);
 #else
-	_EX_DECL feature_db *training(char *);
-	_EX_DECL void leave_one_out_test(feature_db *);
+_EX_DECL feature_db *training(char *);
+_EX_DECL void leave_one_out_test(feature_db *);
 #endif
 
-	_EX_DECL void kocr_exclude(feature_db * db, char *lst_name);
-	_EX_DECL void kocr_distance(feature_db * db, char *lst_name);
-	_EX_DECL void kocr_average(feature_db * db, char *lst_name);
+_EX_DECL void kocr_exclude(feature_db * db, char *lst_name);
+_EX_DECL void kocr_distance(feature_db * db, char *lst_name);
+_EX_DECL void kocr_average(feature_db * db, char *lst_name);
 
 #ifdef USE_SVM
-	_EX_DECL CvSVM *kocr_svm_init(char *);
-	_EX_DECL void kocr_svm_finish(CvSVM *);
-	_EX_DECL char *kocr_recognize_image(CvSVM *, char *);
-	_EX_DECL char *kocr_recognize_Image(CvSVM *, IplImage *);
+_EX_DECL CvSVM *kocr_svm_init(char *);
+_EX_DECL void kocr_svm_finish(CvSVM *);
+_EX_DECL char *kocr_recognize_image(CvSVM *, char *);
+_EX_DECL char *kocr_recognize_Image(CvSVM *, IplImage *);
 #else
-	_EX_DECL feature_db *kocr_init(char *filename);
-	_EX_DECL void kocr_finish(feature_db *db);
-	_EX_DECL char *kocr_recognize_image(feature_db *, char *);
-	_EX_DECL char *kocr_recognize_Image(feature_db *, IplImage *);
+_EX_DECL feature_db *kocr_init(char *filename);
+_EX_DECL void kocr_finish(feature_db *db);
+_EX_DECL char *kocr_recognize_image(feature_db *, char *);
+_EX_DECL char *kocr_recognize_Image(feature_db *, IplImage *);
 #endif
 
 #ifdef __cplusplus

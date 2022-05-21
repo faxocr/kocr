@@ -168,7 +168,7 @@ deskew(cv::Mat &img)
         return; // misdetection
 
     rmatrix = getRotationMatrix2D(cv::Point2f(img.cols / 2.0, img.rows / 2.0),
-				  skew, 1.0);
+                                  skew, 1.0);
 
     cv::warpAffine(img, img_deskew, rmatrix, img.size(),cv::INTER_CUBIC);
 
@@ -182,105 +182,105 @@ deskew(cv::Mat &img)
 void
 angle_detect(cv::Mat img, int angles[N][N][ANGLES])
 {
-  int i, j;
+    int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
-      for (int k = 0; k < ANGLES; k++)
-	angles[i][j][k] = 0;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < N; j++)
+            for (int k = 0; k < ANGLES; k++)
+                angles[i][j][k] = 0;
 
-  for (i = 0; i < SIZE_NORMALIZED - 2; i++)
-    for (j = 0; j < SIZE_NORMALIZED - 2; j++) {
+    for (i = 0; i < SIZE_NORMALIZED - 2; i++)
+        for (j = 0; j < SIZE_NORMALIZED - 2; j++) {
 
-      // 0 1 2
-      // 7 8 3
-      // 6 5 4
-      int P0 = img.at<uchar>(i + 0, j + 0);
-      int P1 = img.at<uchar>(i + 0, j + 1);
-      int P2 = img.at<uchar>(i + 0, j + 2);
-      int P3 = img.at<uchar>(i + 1, j + 2);
-      int P4 = img.at<uchar>(i + 2, j + 2);
-      int P5 = img.at<uchar>(i + 2, j + 1);
-      int P6 = img.at<uchar>(i + 2, j + 0);
-      int P7 = img.at<uchar>(i + 1, j + 0);
-      int P8 = img.at<uchar>(i + 1, j + 1);
+            // 0 1 2
+            // 7 8 3
+            // 6 5 4
+            int P0 = img.at<uchar>(i + 0, j + 0);
+            int P1 = img.at<uchar>(i + 0, j + 1);
+            int P2 = img.at<uchar>(i + 0, j + 2);
+            int P3 = img.at<uchar>(i + 1, j + 2);
+            int P4 = img.at<uchar>(i + 2, j + 2);
+            int P5 = img.at<uchar>(i + 2, j + 1);
+            int P6 = img.at<uchar>(i + 2, j + 0);
+            int P7 = img.at<uchar>(i + 1, j + 0);
+            int P8 = img.at<uchar>(i + 1, j + 1);
 
-      if (!P0 && !P1 && !P2 && !P3 && !P4 && !P5 && !P6 && !P7)
-	continue;
+            if (!P0 && !P1 && !P2 && !P3 && !P4 && !P5 && !P6 && !P7)
+                continue;
 
-      if (!P8)
-	continue;
+            if (!P8)
+                continue;
 #if ANGLES == 8
-      // Angle 0
-      if (P7 && P3)
-	angles[j / M][i / M][0] += 1;
+            // Angle 0
+            if (P7 && P3)
+                angles[j / M][i / M][0] += 1;
 
-      // Angle 1
-      if (P7 && P2 || P6 && P3)
-	angles[j / M][i / M][1] += 1;
+            // Angle 1
+            if (P7 && P2 || P6 && P3)
+                angles[j / M][i / M][1] += 1;
 
-      // Angle 2
-      if (P6 && P2)
-	angles[j / M][i / M][2] += 1;
+            // Angle 2
+            if (P6 && P2)
+                angles[j / M][i / M][2] += 1;
 
-      // Angle 3
-      if (P6 && P1 || P5 && P2)
-	angles[j / M][i / M][3] += 1;
+            // Angle 3
+            if (P6 && P1 || P5 && P2)
+                angles[j / M][i / M][3] += 1;
 
-      // Angle 4
-      if (P1 && P5)
-	angles[j / M][i / M][4] += 1;
+            // Angle 4
+            if (P1 && P5)
+                angles[j / M][i / M][4] += 1;
 
-      // Angle 5
-      if (P0 && P5 || P1 && P4)
-	angles[j / M][i / M][5] += 1;
+            // Angle 5
+            if (P0 && P5 || P1 && P4)
+                angles[j / M][i / M][5] += 1;
 
-      // Angle 6
-      if (P0 && P4)
-	angles[j / M][i / M][6] += 1;
+            // Angle 6
+            if (P0 && P4)
+                angles[j / M][i / M][6] += 1;
 
-      // Angle 7
-      if (P7 && P4 || P0 && P3)
-	angles[j / M][i / M][7] += 1;
+            // Angle 7
+            if (P7 && P4 || P0 && P3)
+                angles[j / M][i / M][7] += 1;
 #else /* ANGLES == 4 */
 
-      // 0 1 2    3  2  1
-      // 7 8 3    ＼｜／
-      // 6 5 4    ー　ー 0
+            // 0 1 2    3  2  1
+            // 7 8 3    ＼｜／
+            // 6 5 4    ー　ー 0
 
-      // Angle 0
-      if (P7 && P3)
-	angles[j / M][i / M][0] += 1;
+            // Angle 0
+            if (P7 && P3)
+                angles[j / M][i / M][0] += 1;
 
-      // Angle 1
-      if (P7 && P2 || P6 && P3)
-	angles[j / M][i / M][0] += 1;
+            // Angle 1
+            if (P7 && P2 || P6 && P3)
+                angles[j / M][i / M][0] += 1;
 
-      // Angle 2
-      if (P6 && P2)
-	angles[j / M][i / M][1] += 1;
+            // Angle 2
+            if (P6 && P2)
+                angles[j / M][i / M][1] += 1;
 
-      // Angle 3
-      if (P6 && P1 || P5 && P2)
-	angles[j / M][i / M][1] += 1;
+            // Angle 3
+            if (P6 && P1 || P5 && P2)
+                angles[j / M][i / M][1] += 1;
 
-      // Angle 4
-      if (P1 && P5)
-	angles[j / M][i / M][2] += 1;
+            // Angle 4
+            if (P1 && P5)
+                angles[j / M][i / M][2] += 1;
 
-      // Angle 5
-      if (P0 && P5 || P1 && P4)
-	angles[j / M][i / M][2] += 1;
+            // Angle 5
+            if (P0 && P5 || P1 && P4)
+                angles[j / M][i / M][2] += 1;
 
-      // Angle 6
-      if (P0 && P4)
-	angles[j / M][i / M][3] += 1;
+            // Angle 6
+            if (P0 && P4)
+                angles[j / M][i / M][3] += 1;
 
-      // Angle 7
-      if (P7 && P4 || P0 && P3)
-	angles[j / M][i / M][3] += 1;
+            // Angle 7
+            if (P7 && P4 || P0 && P3)
+                angles[j / M][i / M][3] += 1;
 #endif
-    }
+        }
 }
 
 /**
@@ -289,49 +289,49 @@ angle_detect(cv::Mat img, int angles[N][N][ANGLES])
 void
 mode_print(int angles[N][N])
 {
-  int i, j;
+    int i, j;
 
-  printf("\n");
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
-      switch(angles[j][i]) {
-      case -1:
-	printf("× ");
-	break;
-      case -2:
-	printf("※ ");
-	break;
-      case 0:
-	printf("　");
-	break;
-      case 1:
-	printf("／");
-	break;
-      case 2:
-	printf("／");
-	break;
-      case 3:
-	printf("／");
-	break;
-      case 4:
-	printf("｜");
-	break;
-      case 5:
-	printf("＼");
-	break;
-      case 6:
-	printf("＼");
-	break;
-      case 7:
-	printf("＼");
-	break;
-      case 8:
-	printf("ー");
-	break;
-      }
+    printf("\n");
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            switch(angles[j][i]) {
+            case -1:
+                printf("× ");
+                break;
+            case -2:
+                printf("※ ");
+                break;
+            case 0:
+                printf("　");
+                break;
+            case 1:
+                printf("／");
+                break;
+            case 2:
+                printf("／");
+                break;
+            case 3:
+                printf("／");
+                break;
+            case 4:
+                printf("｜");
+                break;
+            case 5:
+                printf("＼");
+                break;
+            case 6:
+                printf("＼");
+                break;
+            case 7:
+                printf("＼");
+                break;
+            case 8:
+                printf("ー");
+                break;
+            }
+        }
+        printf("|\n");
     }
-    printf("|\n");
-  }
 }
 
 /**
@@ -340,15 +340,15 @@ mode_print(int angles[N][N])
 void
 density_detect(cv::Mat img, int density[N][N])
 {
-  int i, j;
+    int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
-      density[j][i] = 0;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < N; j++)
+            density[j][i] = 0;
 
-  for (i = 0; i < SIZE_NORMALIZED; i++)
-    for (j = 0; j < SIZE_NORMALIZED; j++)
-      density[j / M][i / M] += img.at<uchar>(i, j) ? 1 : 0;
+    for (i = 0; i < SIZE_NORMALIZED; i++)
+        for (j = 0; j < SIZE_NORMALIZED; j++)
+            density[j / M][i / M] += img.at<uchar>(i, j) ? 1 : 0;
 }
 
 /**
@@ -357,18 +357,18 @@ density_detect(cv::Mat img, int density[N][N])
 void
 density_print(int density[N][N])
 {
-  int i, j;
+    int i, j;
 
-  printf("\n");
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++)
-      if (density[j][i])
-	printf("%2d ", density[j][i]);
-      else
-	printf(" - ");
     printf("\n");
-  }
-  printf("\n");
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++)
+            if (density[j][i])
+                printf("%2d ", density[j][i]);
+            else
+                printf(" - ");
+        printf("\n");
+    }
+    printf("\n");
 }
 
 /**
@@ -377,61 +377,61 @@ density_print(int density[N][N])
 void
 dist_detect(int angles[N][N][ANGLES], int dist[N][N])
 {
-  int i, j;
+    int i, j;
 
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
-      int dt;
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            int dt;
 
-      // packing
-      dt = dist[j][i] =
-	(angles[j][i][0] ? 0b00000001 : 0) +
-	(angles[j][i][1] ? 0b00000010 : 0) +
-	(angles[j][i][2] ? 0b00000100 : 0) +
-	(angles[j][i][3] ? 0b00001000 : 0) +
-	(angles[j][i][4] ? 0b00010000 : 0) +
-	(angles[j][i][5] ? 0b00100000 : 0) +
-	(angles[j][i][6] ? 0b01000000 : 0) +
-	(angles[j][i][7] ? 0b10000000 : 0);
+            // packing
+            dt = dist[j][i] =
+                     (angles[j][i][0] ? 0b00000001 : 0) +
+                     (angles[j][i][1] ? 0b00000010 : 0) +
+                     (angles[j][i][2] ? 0b00000100 : 0) +
+                     (angles[j][i][3] ? 0b00001000 : 0) +
+                     (angles[j][i][4] ? 0b00010000 : 0) +
+                     (angles[j][i][5] ? 0b00100000 : 0) +
+                     (angles[j][i][6] ? 0b01000000 : 0) +
+                     (angles[j][i][7] ? 0b10000000 : 0);
 
-      // 共起パターン検知
-      if (dt == 0) {
-	dist[j][i] = 0;
-	continue;
-      } else if (dt == 0b10000000 ||
-		 dt == 0b01000000 ||
-		 dt == 0b00100000 ||
-		 dt == 0b00010000 ||
-		 dt == 0b00001000 ||
-		 dt == 0b00000100 ||
-		 dt == 0b00000010 ||
-		 dt == 0b00000001) {
-	dist[j][i] = 1;
-      } else if (dt == 0b11000000 ||
-		 dt == 0b01100000 ||
-		 dt == 0b00110000 ||
-		 dt == 0b00011000 ||
-		 dt == 0b00001100 ||
-		 dt == 0b00000110 ||
-		 dt == 0b00000011 ||
-		 dt == 0b10000001) {
-	dist[j][i] = 2;
-      } else if (dt == 0b11100000 ||
-		 dt == 0b01110000 ||
-		 dt == 0b00111000 ||
-		 dt == 0b00011100 ||
-		 dt == 0b00001110 ||
-		 dt == 0b00000111 ||
-		 dt == 0b10000011 ||
-		 dt == 0b11000001) {
-	// 変曲点疑い
-	dist[j][i] = 3;
-      } else {
-	// 交差点疑い
-	dist[j][i] = 4;
-      }
+            // 共起パターン検知
+            if (dt == 0) {
+                dist[j][i] = 0;
+                continue;
+            } else if (dt == 0b10000000 ||
+                       dt == 0b01000000 ||
+                       dt == 0b00100000 ||
+                       dt == 0b00010000 ||
+                       dt == 0b00001000 ||
+                       dt == 0b00000100 ||
+                       dt == 0b00000010 ||
+                       dt == 0b00000001) {
+                dist[j][i] = 1;
+            } else if (dt == 0b11000000 ||
+                       dt == 0b01100000 ||
+                       dt == 0b00110000 ||
+                       dt == 0b00011000 ||
+                       dt == 0b00001100 ||
+                       dt == 0b00000110 ||
+                       dt == 0b00000011 ||
+                       dt == 0b10000001) {
+                dist[j][i] = 2;
+            } else if (dt == 0b11100000 ||
+                       dt == 0b01110000 ||
+                       dt == 0b00111000 ||
+                       dt == 0b00011100 ||
+                       dt == 0b00001110 ||
+                       dt == 0b00000111 ||
+                       dt == 0b10000011 ||
+                       dt == 0b11000001) {
+                // 変曲点疑い
+                dist[j][i] = 3;
+            } else {
+                // 交差点疑い
+                dist[j][i] = 4;
+            }
+        }
     }
-  }
 }
 
 /**
@@ -440,23 +440,23 @@ dist_detect(int angles[N][N][ANGLES], int dist[N][N])
 void
 mode_detect(int angles[N][N][ANGLES], int mode[N][N])
 {
-  int i, j, total;
+    int i, j, total;
 
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
-      int max = 0, total = 0;
-      mode[j][i] = 0;
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            int max = 0, total = 0;
+            mode[j][i] = 0;
 
-      for (int k = 0; k < 8; k++) {
-	total += angles[j][i][k];
+            for (int k = 0; k < 8; k++) {
+                total += angles[j][i][k];
 
-	if (max < angles[j][i][k]) {
-	  max = angles[j][i][k];
-	  mode[j][i] = (k == 0) ? 8 : k;
-	}
-      }
+                if (max < angles[j][i][k]) {
+                    max = angles[j][i][k];
+                    mode[j][i] = (k == 0) ? 8 : k;
+                }
+            }
+        }
     }
-  }
 }
 
 /**
@@ -465,34 +465,34 @@ mode_detect(int angles[N][N][ANGLES], int mode[N][N])
 void
 angle_print(int angles[N][N][ANGLES])
 {
-  int i, j;
+    int i, j;
 
-  printf("\n");
+    printf("\n");
 
 #if 0
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++)
-      if (mode[j][i])
-	printf("%2d ", mode[j][i]);
-      else
-	printf(" * ");
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++)
+            if (mode[j][i])
+                printf("%2d ", mode[j][i]);
+            else
+                printf(" * ");
 
-    printf("\n");
-  }
+        printf("\n");
+    }
 #endif
 
-  for (int k = 0; k < 8; k++) {
-    printf("k: %d\n", k);
-    for (i = 0; i < N; i++) {
-      for (j = 0; j < N; j++)
-	if (angles[j][i][k])
-	  printf("%2d ", angles[j][i][k]);
-	else
-	  printf(" * ");
-      printf("\n");
+    for (int k = 0; k < 8; k++) {
+        printf("k: %d\n", k);
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < N; j++)
+                if (angles[j][i][k])
+                    printf("%2d ", angles[j][i][k]);
+                else
+                    printf(" * ");
+            printf("\n");
+        }
+        printf("\n");
     }
-    printf("\n");
-  }
 }
 
 /**
@@ -501,22 +501,22 @@ angle_print(int angles[N][N][ANGLES])
 void
 edensity_detect(int angles[N][N][ANGLES], int edensity[N][N])
 {
-  int i, j, total;
+    int i, j, total;
 
-  for (i = 0; i < N; i++) {
-    for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
 
-      edensity[j][i] =
-	(angles[j][i][0] ? 1 : 0) +
-	(angles[j][i][1] ? 1 : 0) +
-	(angles[j][i][2] ? 1 : 0) +
-	(angles[j][i][3] ? 1 : 0) +
-	(angles[j][i][4] ? 1 : 0) +
-	(angles[j][i][5] ? 1 : 0) +
-	(angles[j][i][6] ? 1 : 0) +
-	(angles[j][i][7] ? 1 : 0);
+            edensity[j][i] =
+                (angles[j][i][0] ? 1 : 0) +
+                (angles[j][i][1] ? 1 : 0) +
+                (angles[j][i][2] ? 1 : 0) +
+                (angles[j][i][3] ? 1 : 0) +
+                (angles[j][i][4] ? 1 : 0) +
+                (angles[j][i][5] ? 1 : 0) +
+                (angles[j][i][6] ? 1 : 0) +
+                (angles[j][i][7] ? 1 : 0);
+        }
     }
-  }
 }
 
 /**
@@ -525,37 +525,37 @@ edensity_detect(int angles[N][N][ANGLES], int edensity[N][N])
 void
 angle_blur(int src[N][N][ANGLES], int dst[N][N][ANGLES])
 {
-  short	    x, y, i, j, nu;
-  double    total_weight, weight;
-  double    blur[N][N][ANGLES];
+    short     x, y, i, j, nu;
+    double    total_weight, weight;
+    double    blur[N][N][ANGLES];
 
-  // XXX: これは定数ではないか？
-  total_weight = 0;
-  for (i = -2; i <= 2; i++)
-    for (j = -2; j <= 2; j++)
-      total_weight += Gauss[ABS(i)][ABS(j)];
+    // XXX: これは定数ではないか？
+    total_weight = 0;
+    for (i = -2; i <= 2; i++)
+        for (j = -2; j <= 2; j++)
+            total_weight += Gauss[ABS(i)][ABS(j)];
 
-  for (nu = 0; nu < 8; nu++) {
-    for (x = 0; x < N; x++) {
-      for (y = 0; y < N; y++) {
-	blur[x][y][nu] = 0.0;
-	weight = 0.0;
-	for (i = -2; i <= 2; i++) {
-	  for (j = -2; j <= 2; j++) {
-	    if ((x + i >= 0) && (x + i < N)) {
-	      if ((y + j >= 0) && (y + j < N)) {
-		blur[x][y][nu] += (double) src[x + i][y + j][nu] *
-		  Gauss[ABS(i)][ABS(j)];
-		weight += Gauss[ABS(i)][ABS(j)];
-	      }
-	    }
-	  }
-	}
-	dst[x][y][nu] = blur[x][y][nu];
-	dst[x][y][nu] *= total_weight / weight;
-      }
+    for (nu = 0; nu < 8; nu++) {
+        for (x = 0; x < N; x++) {
+            for (y = 0; y < N; y++) {
+                blur[x][y][nu] = 0.0;
+                weight = 0.0;
+                for (i = -2; i <= 2; i++) {
+                    for (j = -2; j <= 2; j++) {
+                        if ((x + i >= 0) && (x + i < N)) {
+                            if ((y + j >= 0) && (y + j < N)) {
+                                blur[x][y][nu] += (double) src[x + i][y + j][nu] *
+                                                  Gauss[ABS(i)][ABS(j)];
+                                weight += Gauss[ABS(i)][ABS(j)];
+                            }
+                        }
+                    }
+                }
+                dst[x][y][nu] = blur[x][y][nu];
+                dst[x][y][nu] *= total_weight / weight;
+            }
+        }
     }
-  }
 }
 
 int
@@ -584,13 +584,13 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
      * 白黒画像取得
      */
     if (img_src.channels() > 1) {
-      cv::cvtColor(img_src, img_bw, CV_BGR2GRAY);
-      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
-      // cv::threshold(img_bw, img_bw, 254, 255, CV_THRESH_BINARY);
-      img_bw =~ img_bw;
+        cv::cvtColor(img_src, img_bw, CV_BGR2GRAY);
+        cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
+        // cv::threshold(img_bw, img_bw, 254, 255, CV_THRESH_BINARY);
+        img_bw =~ img_bw;
     } else {
-      cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
-      img_bw =~ img_src;
+        cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY);
+        img_bw =~ img_src;
     }
 
     /*
@@ -613,7 +613,7 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
     //   閉じるべきでないループを閉じない (6の右上)
     //   閉じるべきでないループを閉じない (8や9の小さなループ)
 
- backtrack:
+backtrack:
     cv::dilate(img_bw, img_dilated, element, cv::Point(-1, -1), 1);
     cv::erode(img_dilated, img_eroded, element, cv::Point(-1, -1), 1);
 
@@ -627,31 +627,31 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
 
     // 中心線抽出処理 (太線の際、中心線のみを抽出する)
     if (!cc_turn && thickness2 > 8) { //  && thickness2 < 14) {
-      // printf("%s: %d, %d\n", filename, (int) thickness2, cc_turn);
+        // printf("%s: %d, %d\n", filename, (int) thickness2, cc_turn);
 
-      for (i = 0; i < img_eroded.size().height; i++)
-	for (j = 0; j < img_eroded.size().width; j++) {
-	  // このthicknessの閾値により、認識精度がわずかに変化する
-	  if (img_distance.at<float>(i, j) > thickness2 - 1)
-	    img_eroded.at<uchar>(i, j) = 0;
-	  else if (img_distance.at<float>(i, j) < thickness2 / 2 - 1)
-	    img_eroded.at<uchar>(i, j) = 0;
-	}
+        for (i = 0; i < img_eroded.size().height; i++)
+            for (j = 0; j < img_eroded.size().width; j++) {
+                // このthicknessの閾値により、認識精度がわずかに変化する
+                if (img_distance.at<float>(i, j) > thickness2 - 1)
+                    img_eroded.at<uchar>(i, j) = 0;
+                else if (img_distance.at<float>(i, j) < thickness2 / 2 - 1)
+                    img_eroded.at<uchar>(i, j) = 0;
+            }
     }
 
     if ((double) (thickness2 / thickness1) >
-	(ELIMINATION_THRESHOLD + size_turn)) {
-      img_eroded.release(); // メモリリーク対策 (不要？)
-      img_eroded = img_bw;
+            (ELIMINATION_THRESHOLD + size_turn)) {
+        img_eroded.release(); // メモリリーク対策 (不要？)
+        img_eroded = img_bw;
     }
 
     /*
      * ラベリング処理 (罫線除去・ノイズ除去・文字要素の抽出)
      */
     unsigned char  *img_label = new unsigned char[img_eroded.size().height *
-                                                  img_eroded.size().width];
+                                     img_eroded.size().width];
     short          *cc_result = new short[img_eroded.size().height *
-                                          img_eroded.size().width];
+                                                                   img_eroded.size().width];
     int             size_x, size_y, top_x, top_y, bottom_x, bottom_y;
     int             cc, num_of_cc;
     int             src_width, src_height, dst_width, dst_height, dst_size;
@@ -661,10 +661,10 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
 
     // ラベリング用データ生成 (XXX: 非効率)
     for (i = 0; i < img_eroded.size().width; i++) {
-      for (j = 0; j < img_eroded.size().height; j++) {
-        img_label[j * img_eroded.size().width + i] =
-          img_eroded.at<uchar>(j, i); // atは (y, x)
-      }
+        for (j = 0; j < img_eroded.size().height; j++) {
+            img_label[j * img_eroded.size().width + i] =
+                img_eroded.at<uchar>(j, i); // atは (y, x)
+        }
     }
 
     // true: 領域の大きな順にソートする場合
@@ -675,8 +675,8 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
 
     num_of_cc = labeling.GetNumOfResultRegions();
     if (!num_of_cc) {
-      ret = ERR_RTN;
-      goto finish;
+        ret = ERR_RTN;
+        goto finish;
     }
 
     //「罫線らしくないCCのうち、最大サイズのCC」を文字として選択
@@ -690,28 +690,28 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
 
         // 罫線っぽい連結成分をスキップ
         if (!(
-	      (aspect_ratio > 8) &&
-	      (size_x > img_eroded.size().width - 2 ||
-	       size_y > img_eroded.size().height - 2)
-              // (ri->GetNumOfPixels() > img_eroded.size().height / 2)
-	      )
-	    ) {
+                    (aspect_ratio > 8) &&
+                    (size_x > img_eroded.size().width - 2 ||
+                     size_y > img_eroded.size().height - 2)
+                    // (ri->GetNumOfPixels() > img_eroded.size().height / 2)
+                )
+           ) {
             break;
         }
     }
 
     // 文字カスレが疑われれば、1回に限りバックトラック
     if (cc_turn++ < 2 && cc + 1 < num_of_cc) {
-      int size_a = ri->GetNumOfPixels();
-      ri = labeling.GetResultRegionInfo(cc + 1);
-      int size_b = ri->GetNumOfPixels();
-      if (size_a / size_b < 10) {
-	// 要素を1つのみ選択するアルゴリズムのため、膨張して結合する目的で
-	// バックトラックをしているが、一定サイズの要素を複数選択する実装に
-	// 変更した方が良いかもしれない
-        goto backtrack;
-      }
-      ri = labeling.GetResultRegionInfo(cc);
+        int size_a = ri->GetNumOfPixels();
+        ri = labeling.GetResultRegionInfo(cc + 1);
+        int size_b = ri->GetNumOfPixels();
+        if (size_a / size_b < 10) {
+            // 要素を1つのみ選択するアルゴリズムのため、膨張して結合する目的で
+            // バックトラックをしているが、一定サイズの要素を複数選択する実装に
+            // 変更した方が良いかもしれない
+            goto backtrack;
+        }
+        ri = labeling.GetResultRegionInfo(cc);
     }
 
     // 切り出し用サイズの生成
@@ -725,11 +725,11 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
 
     // 文字サイズが小さければ、カスレの閾値について再検証
     if (size_turn == 0 && dst_width < 40 && dst_height < 40) {
-      size_turn = 0.05;
-	if ((double) (thickness2 / thickness1) <
-	    (ELIMINATION_THRESHOLD + size_turn)) {
-	  goto backtrack;
-	}
+        size_turn = 0.05;
+        if ((double) (thickness2 / thickness1) <
+                (ELIMINATION_THRESHOLD + size_turn)) {
+            goto backtrack;
+        }
     }
 
     /*
@@ -742,19 +742,19 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
     padding_y = dst_size / 2 - dst_height / 2;
 
     for (i = 0; i < dst_size; i++) {
-      for (j = 0; j < dst_size; j++) {
-        if (i + bottom_x - padding_x < src_width &&
-	    j + bottom_y - padding_y < src_height &&
-	    0 < i + bottom_x - padding_x &&
-	    0 < j + bottom_y - padding_y < src_height) {
-	  if (cc_result[src_width * (j + bottom_y - padding_y) +
-			i + bottom_x - padding_x] == (cc + 1)) {
-	    img_extracted.at<uchar>(j, i) = (uchar) 255;
-	  } else {
-	    img_extracted.at<uchar>(j, i) = (uchar) 0;
-	  }
-	}
-      }
+        for (j = 0; j < dst_size; j++) {
+            if (i + bottom_x - padding_x < src_width &&
+                    j + bottom_y - padding_y < src_height &&
+                    0 < i + bottom_x - padding_x &&
+                    0 < j + bottom_y - padding_y < src_height) {
+                if (cc_result[src_width * (j + bottom_y - padding_y) +
+                                        i + bottom_x - padding_x] == (cc + 1)) {
+                    img_extracted.at<uchar>(j, i) = (uchar) 255;
+                } else {
+                    img_extracted.at<uchar>(j, i) = (uchar) 0;
+                }
+            }
+        }
     }
 
     /*
@@ -766,18 +766,18 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
      * サイズ正規化処理
      */
     resize(img_extracted, img_normalized,
-	   cv::Size(SIZE_NORMALIZED, SIZE_NORMALIZED),
+           cv::Size(SIZE_NORMALIZED, SIZE_NORMALIZED),
            SIZE_NORMALIZED / img_extracted.size().width,
            SIZE_NORMALIZED / img_extracted.size().height, CV_INTER_AREA);
 
     // 外周マージン再確保 (各種アルゴリズム上、マージンがあるほうが効率が良い)
     for (i = 0; i < SIZE_NORMALIZED; i++) {
-      img_normalized.at<uchar>(0, i) = (uchar) 0;
-      img_normalized.at<uchar>(SIZE_NORMALIZED - 1, i) = (uchar) 0;
+        img_normalized.at<uchar>(0, i) = (uchar) 0;
+        img_normalized.at<uchar>(SIZE_NORMALIZED - 1, i) = (uchar) 0;
     }
     for (j = 0; j < SIZE_NORMALIZED; j++) {
-      img_normalized.at<uchar>(j, 0) = (uchar) 0;
-      img_normalized.at<uchar>(j, SIZE_NORMALIZED - 1) = (uchar) 0;
+        img_normalized.at<uchar>(j, 0) = (uchar) 0;
+        img_normalized.at<uchar>(j, SIZE_NORMALIZED - 1) = (uchar) 0;
     }
 
     /*
@@ -818,14 +818,14 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
      * 特徴量の返り値作成 (XXX: 非効率)
      */
     for (i = 0; i < N; i++) {
-      for (j = 0; j < N; j++) {
+        for (j = 0; j < N; j++) {
 #if 0
-	features[j][i] = pdensity[j][i];
+            features[j][i] = pdensity[j][i];
 #else
-	for (int k = 0; k < ANGLES; k++)
-	  features[j][i][k] = angles_f[j][i][k];
+            for (int k = 0; k < ANGLES; k++)
+                features[j][i][k] = angles_f[j][i][k];
 #endif
-      }
+        }
     }
 
 #ifdef DEBUG
@@ -838,7 +838,7 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
      * 保存処理
      */
     if (filename[0] != '\0') {
-      imwrite(filename, img_normalized);
+        imwrite(filename, img_normalized);
     }
 
     // mode_print(mode);
@@ -859,7 +859,7 @@ Extract_Feature(cv::Mat img_src, int features[N][N][ANGLES])
     checkPreprocessedImage(img_src, img_bw, img_dilated, img_eroded, img_extracted, img_normalized);
 #endif /* THINNING_MAIN */
 
- finish:
+finish:
     img_bw.release();
     img_eroded.release();
     img_dilated.release();
@@ -875,27 +875,27 @@ int
 Extract_Feature_wrapper(char *fname, int features[N][N][ANGLES])
 //Extract_Feature_wrapper(char *fname, int features[N][N])
 {
-  cv::Mat img_src;
-  int ret;
+    cv::Mat img_src;
+    int ret;
 
-  img_src = cv::imread(fname);
-  if (img_src.empty()) {
-    fprintf(stderr, "image file \"%s\": cannot be found.\n", fname);
-    return ERR_RTN;
-  }
+    img_src = cv::imread(fname);
+    if (img_src.empty()) {
+        fprintf(stderr, "image file \"%s\": cannot be found.\n", fname);
+        return ERR_RTN;
+    }
 
-  if (strlen(fname) >= FILENAME_SIZE) {
-    fprintf(stderr, "file name \"%s\": too long.\n", fname);
-    return ERR_RTN;
-  }
+    if (strlen(fname) >= FILENAME_SIZE) {
+        fprintf(stderr, "file name \"%s\": too long.\n", fname);
+        return ERR_RTN;
+    }
 
-  strcpy(filename, fname);
-  strncpy(strrchr(filename, '.'), "-conv.png", 10);
+    strcpy(filename, fname);
+    strncpy(strrchr(filename, '.'), "-conv.png", 10);
 
-  ret = Extract_Feature(img_src, features);
-  filename[0] = '\0';
+    ret = Extract_Feature(img_src, features);
+    filename[0] = '\0';
 
-  return ret;
+    return ret;
 }
 
 #ifdef THINNING_MAIN
@@ -1017,7 +1017,7 @@ checkPreprocessedImage(const cv::Mat &img_src, const cv::Mat &img_bw, const cv::
         cvDestroyAllWindows();
     }
     if (writePreprocessedImageFileName != NULL) {
-        imwrite(writePreprocessedImageFileName , montagedImage);
+        imwrite(writePreprocessedImageFileName, montagedImage);
     }
 
     return retCode;
@@ -1046,16 +1046,16 @@ main(int argc, char *argv[])
     };
     while ((optid = getopt_long(argc, argv, "h", opts, &optindex)) != -1) {
         switch (optid) {
-            case 'h':
-                usage(argv[0]);
-                return 1;
-                break;
-            case 0:
-                showPreprocessedImageFlag = 1;
-                break;
-            case 1:
-                writePreprocessedImageFileName = optarg;
-                break;
+        case 'h':
+            usage(argv[0]);
+            return 1;
+            break;
+        case 0:
+            showPreprocessedImageFlag = 1;
+            break;
+        case 1:
+            writePreprocessedImageFileName = optarg;
+            break;
         }
     }
 

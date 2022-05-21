@@ -27,7 +27,7 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
     cv::Mat img_bw = img_src.clone();
 
     if (img_src.channels() > 1) {
-      cv::cvtColor(img_bw, img_bw, CV_BGR2GRAY);
+        cv::cvtColor(img_bw, img_bw, CV_BGR2GRAY);
     }
     cv::threshold(img_bw, img_bw, 0.75 * 255, 255, CV_THRESH_BINARY_INV);
 
@@ -36,20 +36,20 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
      */
     int x_max = -1, x_min = img_bw.size().width;
     int y_max = -1, y_min = img_bw.size().height;
-    for(int i=0;i<img_bw.size().height;i++){
-      for(int j=0;j<img_bw.size().width;j++){
-        if(img_bw.at<uchar>(i, j) > 0){
-          x_max = std::max(x_max, j);
-          x_min = std::min(x_min, j);
-          y_max = std::max(y_max, i);
-          y_min = std::min(y_min, i);
+    for(int i=0; i<img_bw.size().height; i++) {
+        for(int j=0; j<img_bw.size().width; j++) {
+            if(img_bw.at<uchar>(i, j) > 0) {
+                x_max = std::max(x_max, j);
+                x_min = std::min(x_min, j);
+                y_max = std::max(y_max, i);
+                y_min = std::min(y_min, i);
+            }
         }
-      }
     }
 
-    if(x_max == -1){
-      // 0以上のピクセルが1つも存在しなかった．
-      return cv::Mat();
+    if(x_max == -1) {
+        // 0以上のピクセルが1つも存在しなかった．
+        return cv::Mat();
     }
 
     cv::Mat img_crop = img_bw(cv::Rect(x_min, y_min, x_max - x_min + 1, y_max - y_min + 1)).clone();
@@ -84,7 +84,7 @@ cv::Mat preprocessing_for_cnn(cv::Mat img_src) {
 }
 
 
-char *recognize(Network *net, IplImage *src_img){
+char *recognize(Network *net, IplImage *src_img) {
     std::vector<int> src_shape(4);
     src_shape[0] = 1;  // num of images
     src_shape[1] = 1;  // channel
@@ -93,13 +93,13 @@ char *recognize(Network *net, IplImage *src_img){
 
     Tensor<float> src_tensor(src_shape);
     cv::Mat src_mat = preprocessing_for_cnn(cv::cvarrToMat(src_img, true));
-    if (src_mat.data == NULL){
-      // some error occured in preprocessing,
-      // it may be that the input image has no black area.
-      return NULL;
+    if (src_mat.data == NULL) {
+        // some error occured in preprocessing,
+        // it may be that the input image has no black area.
+        return NULL;
     }
 
-    for(int i=0;i<src_tensor.n;i++){
+    for(int i=0; i<src_tensor.n; i++) {
         src_tensor.ix(i) = (float)src_mat.data[i] / 255;
     }
     src_mat.release();
@@ -116,10 +116,10 @@ char *recognize(Network *net, IplImage *src_img){
 
 char *recognize_multi(Network *net, IplImage *src_img) {
     IplImage    *dst_img = NULL;
-    CvRect	    bb;
+    CvRect      bb;
     IplImage    *part_img, *body;
-    int		    seq_num, start_x, width, next_start;
-    char	    *result_str;
+    int         seq_num, start_x, width, next_start;
+    char        *result_str;
 
     // prepare Tensor as input for Network
     std::vector<int> src_shape(4);
@@ -164,7 +164,7 @@ char *recognize_multi(Network *net, IplImage *src_img) {
             break;
 
         cv::Mat src_mat = preprocessing_for_cnn(cv::cvarrToMat(part_img, true));
-        for(int i=0;i<src_tensor.n;i++){
+        for(int i=0; i<src_tensor.n; i++) {
             src_tensor.ix(i) = (float)src_mat.data[i] / 255;
         }
         src_mat.release();
@@ -185,7 +185,7 @@ char *recognize_multi(Network *net, IplImage *src_img) {
 }
 
 
-char *recog_image(Network *net, IplImage *src_img){
+char *recog_image(Network *net, IplImage *src_img) {
     char *result;
 
     if (src_img->width / src_img->height > THRES_RATIO)
@@ -195,13 +195,13 @@ char *recog_image(Network *net, IplImage *src_img){
     return result;
 }
 
-int read_int(std::ifstream& ifs){
+int read_int(std::ifstream& ifs) {
     int n;
     ifs.read(reinterpret_cast<char*>(&n), sizeof(int));
     return n;
 }
 
-Network *kocr_cnn_init(char *filename){
+Network *kocr_cnn_init(char *filename) {
     if (filename == NULL)
         return (Network *) NULL;
 
@@ -209,7 +209,7 @@ Network *kocr_cnn_init(char *filename){
     int nb_classes = read_int(ifs);
 
     std::vector<std::string> unique_labels(nb_classes);
-    for(int i=0;i<nb_classes;i++){
+    for(int i=0; i<nb_classes; i++) {
         int str_len = read_int(ifs);
         std::vector<char> str(str_len);
         ifs.read(str.data(), sizeof(char) * str_len);
@@ -253,19 +253,19 @@ Network *kocr_cnn_init(char *filename){
     return net;
 }
 
-void kocr_cnn_finish(Network *net){
+void kocr_cnn_finish(Network *net) {
     if (net != NULL) {
         delete net;
     }
 }
 
-char *kocr_recognize_image(Network *net, char *file_name){
+char *kocr_recognize_image(Network *net, char *file_name) {
     IplImage       *src_img;
     char *c;
 
-    if (net == NULL || file_name == NULL){
-      printf("test point 1\n");
-      return NULL;
+    if (net == NULL || file_name == NULL) {
+        printf("test point 1\n");
+        return NULL;
     }
 
     src_img = cvLoadImage(file_name);
@@ -276,7 +276,7 @@ char *kocr_recognize_image(Network *net, char *file_name){
         for (; *p; ++p) *p = tolower(*p);
         if (strstr(file_name, ".gif")) {
             printf("This program doesn't support GIF images.\n");
-        }else{
+        } else {
             printf("An error occurred in loading images. Please check that the file exists.\n");
         }
         return NULL;
@@ -289,7 +289,7 @@ char *kocr_recognize_image(Network *net, char *file_name){
 }
 
 
-char *kocr_recognize_Image(Network *net, IplImage *src_img){
+char *kocr_recognize_Image(Network *net, IplImage *src_img) {
     if (net == NULL || src_img == NULL)
         return NULL;
 

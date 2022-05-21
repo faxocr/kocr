@@ -66,7 +66,7 @@
 char *
 conv_fname(char *fname, const char *ext)
 {
-    int		    slen = strlen(fname) + strlen(ext);
+    int         slen = strlen(fname) + strlen(ext);
     char           *newname = (char *) malloc(slen);
     char           *p;
 
@@ -74,10 +74,10 @@ conv_fname(char *fname, const char *ext)
     p = strrchr(newname, '.');
 
     if (p) {
-	strcpy(p, ext);
+        strcpy(p, ext);
     } else {
-	p = strrchr(newname, '\0');
-	strcpy(p, ext);
+        p = strrchr(newname, '\0');
+        strcpy(p, ext);
     }
 
     return newname;
@@ -146,15 +146,15 @@ main(int argc, char *argv[])
 
     // Recognize characters in target
     net = kocr_cnn_init(wf_name);
-    
-    if (net != NULL && !net->load_completed){
+
+    if (net != NULL && !net->load_completed) {
         printf("An error occured in loading weights\n");
         exit(-1);
     }
 
     // Character recognition
     resultstr = kocr_recognize_image(net, target);
-    
+
     printf("Result: %s\n", resultstr);
     free(resultstr);
 
@@ -172,106 +172,106 @@ main(int argc, char *argv[])
 
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
 
-	// Database generation
-	svm = training(argv[1]);
-	if (!svm)
-	    exit(-1);
-	db_name = conv_fname(argv[1], ".xml");
-	svm->save(db_name);
-	exit(0);
+        // Database generation
+        svm = training(argv[1]);
+        if (!svm)
+            exit(-1);
+        db_name = conv_fname(argv[1], ".xml");
+        svm->save(db_name);
+        exit(0);
     }
 #else
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
 
-	// Database generation
-	db = training(argv[1]);
-	if (!db)
-	    exit(-1);
-	db_name = conv_fname(argv[1], ".db");
-	db_save(db_name, db);
-	free(db);
+        // Database generation
+        db = training(argv[1]);
+        if (!db)
+            exit(-1);
+        db_name = conv_fname(argv[1], ".db");
+        db_save(db_name, db);
+        free(db);
 
-	exit(0);
+        exit(0);
     }
 #endif /* USE_SVM */
 
     switch (argc) {
     case 2:
 
-	// Leave one out testing
+        // Leave one out testing
 #ifdef USE_SVM
-	db_name = conv_fname(argv[1], ".db");
-	if (is_database(db_name)) {
-	  db = db_load(db_name);
-	  if (!db)
-	    exit(-1);
+        db_name = conv_fname(argv[1], ".db");
+        if (is_database(db_name)) {
+            db = db_load(db_name);
+            if (!db)
+                exit(-1);
 
-	  leave_one_out_test(db, argv[1]);
-	} else {
-	  printf("Requires old .db file, for Leave-one-out test...\n");
-	}
+            leave_one_out_test(db, argv[1]);
+        } else {
+            printf("Requires old .db file, for Leave-one-out test...\n");
+        }
 #else
-	db = db_load(argv[1]);
-	if (!db)
-	    exit(-1);
-	leave_one_out_test(db);
+        db = db_load(argv[1]);
+        if (!db)
+            exit(-1);
+        leave_one_out_test(db);
 #endif
-	break;
+        break;
 
     case 3:
 
 #ifdef USE_SVM
-	// argv[1] trained data (xml)
-	// argv[2] target image
-	svm = kocr_svm_init(argv[1]);
-	if (!svm)
-	    exit(-1);
+        // argv[1] trained data (xml)
+        // argv[2] target image
+        svm = kocr_svm_init(argv[1]);
+        if (!svm)
+            exit(-1);
 
-	// Character recognition
-	resultstr = kocr_recognize_image(svm, argv[2]);
-	if (!resultstr)
-	    exit(-1);
+        // Character recognition
+        resultstr = kocr_recognize_image(svm, argv[2]);
+        if (!resultstr)
+            exit(-1);
 
-	printf("Result: %s\n", resultstr);
-	free(resultstr);
+        printf("Result: %s\n", resultstr);
+        free(resultstr);
 
-	kocr_svm_finish(svm);
+        kocr_svm_finish(svm);
 #else
-	if (!is_database(argv[1])) {
-	  printf("Requires old .db file for character recognition.\n");
-	  break;
-	}
+        if (!is_database(argv[1])) {
+            printf("Requires old .db file for character recognition.\n");
+            break;
+        }
 
-	db = kocr_init(argv[1]);
-	if (!db)
-	    exit(-1);
+        db = kocr_init(argv[1]);
+        if (!db)
+            exit(-1);
 
-	if (!strcmp("exclude", argv[2])) {
-	    // Exclude error files
-	    lst_name = conv_fname(argv[1], ".lst");
-	    kocr_exclude(db, lst_name);
-	} else if (!strcmp("average", argv[2])) {
-	    // Calcurate distance to the average
-	    lst_name = conv_fname(argv[1], ".lst");
-	    kocr_average(db, lst_name);
-	} else if (!strcmp("distance", argv[2])) {
-	    // Calcurate distance to the nearest neighbour
-	    lst_name = conv_fname(argv[1], ".lst");
-	    kocr_distance(db, lst_name);
-	} else {
-	    // Character recognition
-	    resultstr = kocr_recognize_image(db, argv[2]);
-	    printf("Result: %s\n", resultstr);
-	    free(resultstr);
-	}
-	kocr_finish(db);
+        if (!strcmp("exclude", argv[2])) {
+            // Exclude error files
+            lst_name = conv_fname(argv[1], ".lst");
+            kocr_exclude(db, lst_name);
+        } else if (!strcmp("average", argv[2])) {
+            // Calcurate distance to the average
+            lst_name = conv_fname(argv[1], ".lst");
+            kocr_average(db, lst_name);
+        } else if (!strcmp("distance", argv[2])) {
+            // Calcurate distance to the nearest neighbour
+            lst_name = conv_fname(argv[1], ".lst");
+            kocr_distance(db, lst_name);
+        } else {
+            // Character recognition
+            resultstr = kocr_recognize_image(db, argv[2]);
+            printf("Result: %s\n", resultstr);
+            free(resultstr);
+        }
+        kocr_finish(db);
 #endif
-	break;
+        break;
 
     case 1:
     default:
-	usage();
-	exit(0);
+        usage();
+        exit(0);
     }
 #endif /* USE_CNN */
     return 0;
