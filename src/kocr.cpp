@@ -29,43 +29,43 @@
 #define _WITH_GETLINE
 #define _KOCR_MAIN
 
+#include <math.h>
+#include <search.h> // for qsort
 #include <stdio.h>
 #include <stdlib.h>
-#include <search.h> // for qsort
 #include <string.h>
-#include <math.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <opencv/ml.h>
 
+#include "Labeling.h"
+#include "cropnums.h"
 #include "kocr.h"
 #include "subr.h"
-#include "cropnums.h"
-#include "Labeling.h"
 
-#define ERR_DIR "../images/error"
-#define OPENCVXML "<opencv_storage>\n"
-#define MAXSTRLEN 1024
+#define ERR_DIR     "../images/error"
+#define OPENCVXML   "<opencv_storage>\n"
+#define MAXSTRLEN   1024
 #define THRES_RATIO 2 // 画像の縦横比がコレを超えると、切り出し処理へ
 
 /*
  * static functions
  */
 #ifdef USE_SVM
-static char *recog_image(CvSVM *, IplImage *);
+static char* recog_image(CvSVM*, IplImage*);
 #else
-static char *recog_image(feature_db *, IplImage *);
+static char* recog_image(feature_db*, IplImage*);
 #endif
 
-static void exclude(feature_db * db, char *lst_name);
-static void distance(feature_db * db, char *lst_name);
-static void average(feature_db * db, char *lst_name);
+static void exclude(feature_db* db, char* lst_name);
+static void distance(feature_db* db, char* lst_name);
+static void average(feature_db* db, char* lst_name);
 
 /* ============================================================*
  * トレーニング用関数
@@ -122,25 +122,25 @@ static void average(feature_db * db, char *lst_name);
  */
 
 #ifdef USE_SVM
-CvSVM *
-training(char *list_file)
+CvSVM*
+training(char* list_file)
 #else
-feature_db *
-training(char *list_file)
+feature_db*
+training(char* list_file)
 #endif
 {
-    IplConvKernel  *element;
-    int         custom_shape[MASKSIZE * MASKSIZE];
-    int         i, j, k, cc, n, m, d;
-    int         num_of_char = 0; // 画像数
-    char        line_buf[300];
-    FILE           *listfile;
-    LabelingBS      labeling; // 使ってない
-    char           *class_data; // データベース上の保存場所（ポインタ）
-    char           *target_dir;
-    DIRP           ***char_data; // 画像ごとに、16*16のbyte領域を確保
-    char           *Class; // Class[num_of_char]:画像のクラスを保存
-    datafolder     *df; // 特徴量保存領域
+    IplConvKernel* element;
+    int            custom_shape[MASKSIZE * MASKSIZE];
+    int            i, j, k, cc, n, m, d;
+    int            num_of_char = 0; // 画像数
+    char           line_buf[300];
+    FILE*          listfile;
+    LabelingBS     labeling; // 使ってない
+    char* class_data; // データベース上の保存場所（ポインタ）
+    char* target_dir;
+    DIRP***     char_data; // 画像ごとに、16*16のbyte領域を確保
+    char*       Class;     // Class[num_of_char]:画像のクラスを保存
+    datafolder* df;        // 特徴量保存領域
 
 #ifdef THINNING
     int features[N][N][ANGLES];
@@ -148,16 +148,16 @@ training(char *list_file)
 #endif
 
 #ifdef USE_SVM
-    CvSVM svm, *svm_;
-    CvSVMParams param;
+    CvSVM          svm, *svm_;
+    CvSVMParams    param;
     CvTermCriteria criteria;
-    int char_count[256], class_count;
+    int            char_count[256], class_count;
 
     for (i = 0; i < 256; i++)
         char_count[i] = 0;
 #endif
 
-    if ((listfile = fopen(list_file, "rt")) == (FILE *) NULL) {
+    if ((listfile = fopen(list_file, "rt")) == (FILE*)NULL) {
         printf("image list file is not found. aborting...\n");
 
         // キー入力待ち
@@ -169,10 +169,14 @@ training(char *list_file)
     // 読み込み文字数のカウント
     while (fgets(line_buf, sizeof(line_buf), listfile) != NULL) {
         num_of_char++;
-        char           *p = line_buf;
-        while (isprint(*p)) p++;
+        char* p = line_buf;
+        while (isprint(*p))
+            p++;
         if (*p != '\n') {
-            printf("invalid file format...\n n = %d, *p = %d != %d\n",num_of_char,*p,'\n');
+            printf("invalid file format...\n n = %d, *p = %d != %d\n",
+                   num_of_char,
+                   *p,
+                   '\n');
             return NULL;
         }
     }
@@ -187,7 +191,7 @@ training(char *list_file)
     target_dir = strdup(list_file);
     if (target_dir) {
         // if(p):ポインタpがnullの時不成立、if(p != NULL)
-        char *p;
+        char* p;
         // char *strrch(const char *s,int c):
         // 文字列sの先頭から文字cを探し、最初に見つかった位置をポインタで返す
         p = strrchr(target_dir, '/');
@@ -205,22 +209,22 @@ training(char *list_file)
     printf("extracting features...\n");
 
     // 全文字データ格納領域確保
-    Class = (char *)malloc(sizeof(char) * num_of_char);
+    Class = (char*)malloc(sizeof(char) * num_of_char);
     // char_data[num_of_char(画像数)][Y_SIZE(16)][X_SIZE(16)](Nはピクセル数)
 
-    char_data = (DIRP ***) malloc(sizeof(DIRP **) * num_of_char);
+    char_data = (DIRP***)malloc(sizeof(DIRP**) * num_of_char);
 #ifdef THINNING
     for (n = 0; n < num_of_char; n++) {
-        char_data[n] = (DIRP **) malloc(sizeof(DIRP *) * N);
+        char_data[n] = (DIRP**)malloc(sizeof(DIRP*) * N);
         for (i = 0; i < X_SIZE; i++) {
-            char_data[n][i] = (DIRP *) malloc(sizeof(DIRP) * N);
+            char_data[n][i] = (DIRP*)malloc(sizeof(DIRP) * N);
         }
     }
 #else
     for (n = 0; n < num_of_char; n++) {
-        char_data[n] = (DIRP **) malloc(sizeof(DIRP *) * Y_SIZE);
+        char_data[n] = (DIRP**)malloc(sizeof(DIRP*) * Y_SIZE);
         for (i = 0; i < X_SIZE; i++) {
-            char_data[n][i] = (DIRP *) malloc(sizeof(DIRP) * X_SIZE);
+            char_data[n][i] = (DIRP*)malloc(sizeof(DIRP) * X_SIZE);
         }
     }
 #endif
@@ -232,8 +236,8 @@ training(char *list_file)
     // ファイル位置指示子を先頭に戻し、エラー指示子と終端指示子をクリアする
     rewind(listfile);
     while (fgets(line_buf, sizeof(line_buf), listfile) != NULL) {
-        char        char_file_name [400];
-        char           *p;
+        char  char_file_name[400];
+        char* p;
 
         // 末尾の改行文字を終端文字に置き換える
         p = strchr(line_buf, '\n');
@@ -290,7 +294,7 @@ training(char *list_file)
             continue;
         }
 
-        //char_dataに保存
+        // char_dataに保存
         for (i = 0; i < Y_SIZE; i++) {
             for (j = 0; j < X_SIZE; j++) {
                 for (d = 0; d < 4; d++) {
@@ -309,9 +313,9 @@ training(char *list_file)
     //
     // 全特徴情報のパッキング
     //
-    feature_db * db = (feature_db *) malloc(sizeof(feature_db) +
-                                            sizeof(DIRP[Y_SIZE][X_SIZE]) * n +
-                                            sizeof(char) * n);
+    feature_db* db = (feature_db*)malloc(sizeof(feature_db)
+                                         + sizeof(DIRP[Y_SIZE][X_SIZE]) * n
+                                         + sizeof(char) * n);
     db->magic = MAGIC_NO;
     db->nitems = num_of_char = n;
     db->feature_offset = sizeof(feature_db);
@@ -323,17 +327,20 @@ training(char *list_file)
      */
 
     // feature_dataの宣言
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+
     // dbの特徴量の先頭アドレス
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + sizeof(*db));
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + sizeof(*db));
     // dbのクラスの先頭アドレス
-    class_data = (char *)db + sizeof(*db) + sizeof(DIRP[Y_SIZE][X_SIZE]) * n;
+    class_data = (char*)db + sizeof(*db) + sizeof(DIRP[Y_SIZE][X_SIZE]) * n;
 
     for (n = 0; n < num_of_char; n++) {
         for (i = 0; i < Y_SIZE; i++) {
             for (j = 0; j < X_SIZE; j++) {
-                DIRP          **A = char_data[n];
-                DIRP(*B)[Y_SIZE][X_SIZE] = &feature_data[n];
+                DIRP** A = char_data[n];
+                DIRP(*B)
+                [Y_SIZE][X_SIZE] = &feature_data[n];
 
                 B[0][i][j].I = A[i][j].I;
                 B[0][i][j].d[0] = A[i][j].d[0];
@@ -375,21 +382,22 @@ training(char *list_file)
 
 #ifdef THINNING
     // 必要なのはCV_8UC1だが、CvSVMのバグで、CV_32FC1にする必要がある
-    CvMat *Direction = cvCreateMat(db->nitems, N * N * ANGLES, CV_32FC1);
+    CvMat* Direction = cvCreateMat(db->nitems, N * N * ANGLES, CV_32FC1);
 #else
-    CvMat *Direction = cvCreateMat(db->nitems, Y_SIZE * X_SIZE * 4, CV_32FC1);
-    CvMat *Iluminosity = cvCreateMat(db->nitems, Y_SIZE * X_SIZE, CV_32FC1);
+    CvMat* Direction = cvCreateMat(db->nitems, Y_SIZE * X_SIZE * 4, CV_32FC1);
+    CvMat* Iluminosity = cvCreateMat(db->nitems, Y_SIZE * X_SIZE, CV_32FC1);
 #endif
-    CvMat *Classlabel = cvCreateMat(db->nitems, 1, CV_32FC1);
+    CvMat* Classlabel = cvCreateMat(db->nitems, 1, CV_32FC1);
 
     for (i = 0; i < db->nitems; ++i) {
-        cvmSet(Classlabel, i, 0, (float) class_data[i]);
+        cvmSet(Classlabel, i, 0, (float)class_data[i]);
 #ifdef THINNING
         for (j = 0; j < N; ++j) {
             for (k = 0; k < N; ++k) {
                 for (int kk = 0; kk < ANGLES; ++kk) {
                     cvmSet(Direction,
-                           i, j * N * ANGLES + k * ANGLES + kk,
+                           i,
+                           j * N * ANGLES + k * ANGLES + kk,
                            char_data[i][k][j].d[kk]);
                 }
 #else
@@ -398,12 +406,12 @@ training(char *list_file)
                 cvmSet(Iluminosity,
                        i,
                        j * Y_SIZE + k,
-                       (float) (feature_data[i][j][k].I));
+                       (float)(feature_data[i][j][k].I));
                 for (int kk = 0; kk < 4; ++kk) {
                     cvmSet(Direction,
                            i,
                            j * Y_SIZE * 4 + k * 4 + kk,
-                           (float) feature_data[i][j][k].d[kk]);
+                           (float)feature_data[i][j][k].d[kk]);
                 }
 #endif
             }
@@ -421,7 +429,11 @@ training(char *list_file)
 
     try {
         svm_ = new CvSVM();
-        svm_->train_auto(Direction, Classlabel, NULL, NULL, param,
+        svm_->train_auto(Direction,
+                         Classlabel,
+                         NULL,
+                         NULL,
+                         param,
                          50,
                          svm.get_default_grid(CvSVM::C),
                          svm.get_default_grid(CvSVM::GAMMA),
@@ -429,7 +441,7 @@ training(char *list_file)
                          svm.get_default_grid(CvSVM::NU),
                          svm.get_default_grid(CvSVM::COEF),
                          svm.get_default_grid(CvSVM::DEGREE));
-    } catch (cv::Exception &e) {
+    } catch (cv::Exception& e) {
         const char* err_msg = e.what();
         printf("%s\n", err_msg);
     }
@@ -441,7 +453,8 @@ training(char *list_file)
      * mallocした領域を解放する
      */
     for (n = 0; n < num_of_char; n++) {
-        if (char_data[n] == NULL) continue;
+        if (char_data[n] == NULL)
+            continue;
         for (i = 0; i < X_SIZE; i++) {
             if (char_data[n][i] != NULL) {
                 free(char_data[n][i]);
@@ -464,23 +477,24 @@ training(char *list_file)
  * ============================================================ */
 #ifdef USE_SVM
 void
-leave_one_out_test(feature_db * db, char *svm_data)
+leave_one_out_test(feature_db* db, char* svm_data)
 #else
 void
-leave_one_out_test(feature_db * db)
+leave_one_out_test(feature_db* db)
 #endif
 {
-    double      min_dist, dist; //最近傍法用の距離計算
-    int         min_char_data;
-    int         i, j, n, m;
-    int         correct = 0;
-    int         miss = 0;
-    int         nitems;
-    char        file_num     [300];
+    double min_dist, dist; //最近傍法用の距離計算
+    int    min_char_data;
+    int    i, j, n, m;
+    int    correct = 0;
+    int    miss = 0;
+    int    nitems;
+    char   file_num[300];
 
-    IplImage       *miss_recog;
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    char           *class_data;
+    IplImage* miss_recog;
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    char* class_data;
 
     // データベースがこのプログラムで作られたものではないとき終了
     if (db->magic != MAGIC_NO) {
@@ -489,21 +503,21 @@ leave_one_out_test(feature_db * db)
     miss_recog = cvCreateImage(cvSize(2 * X_SIZE, Y_SIZE), IPL_DEPTH_8U, 1);
 
     nitems = db->nitems;
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-    class_data = (char *)db + db->class_offset;
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+    class_data = (char*)db + db->class_offset;
 
-    //printf("starting leave-one-out testing...\n");
+    // printf("starting leave-one-out testing...\n");
 
 #ifdef USE_SVM
     cv::Mat Direction;
-    Direction.create(db->nitems-1,Y_SIZE*X_SIZE*4,CV_32FC1);
+    Direction.create(db->nitems - 1, Y_SIZE * X_SIZE * 4, CV_32FC1);
     cv::Mat Classlabel;
-    Classlabel.create(db->nitems-1,1,CV_32FC1);
-    CvMat *Inputdata = cvCreateMat(1,Y_SIZE*X_SIZE*4,CV_32FC1);
+    Classlabel.create(db->nitems - 1, 1, CV_32FC1);
+    CvMat* Inputdata = cvCreateMat(1, Y_SIZE * X_SIZE * 4, CV_32FC1);
 
-    CvSVM svm, svm_;
-    CvSVMParams param;
-    char response;
+    CvSVM          svm, svm_;
+    CvSVMParams    param;
+    char           response;
     CvTermCriteria criteria;
 
     svm_.load(svm_data);
@@ -516,16 +530,20 @@ leave_one_out_test(feature_db * db)
         for (i = 0; i < nitems; ++i) {
             if (i != n)
                 Classlabel.at<float>(i - pass_n, 0) =
-                    (float) class_data[(int)(i - pass_n)];
+                    (float)class_data[(int)(i - pass_n)];
             for (j = 0; j < Y_SIZE; ++j) {
                 for (int k = 0; k < X_SIZE; ++k) {
                     for (int kk = 0; kk < 4; ++kk) {
                         if (i != n)
-                            Direction.at<float>(i - pass_n, j * X_SIZE * 4 + k * 4 + kk) =
-                                (float) feature_data[(int)(i - pass_n)][j][k].d[kk];
+                            Direction.at<float>(i - pass_n,
+                                                j * X_SIZE * 4 + k * 4 + kk) =
+                                (float)feature_data[(int)(i - pass_n)][j][k]
+                                    .d[kk];
                         else
-                            cvmSet(Inputdata, 0, j * X_SIZE * 4 + k * 4 + kk,
-                                   (float) feature_data[i][j][k].d[kk]);
+                            cvmSet(Inputdata,
+                                   0,
+                                   j * X_SIZE * 4 + k * 4 + kk,
+                                   (float)feature_data[i][j][k].d[kk]);
                     }
                 }
             }
@@ -536,38 +554,39 @@ leave_one_out_test(feature_db * db)
         if (1) {
             // True LOOT (SLOW)
             svm.train(Direction, Classlabel, cv::Mat(), cv::Mat(), param);
-            response = (char) svm.predict(Inputdata);
+            response = (char)svm.predict(Inputdata);
         } else {
             // Trained data
-            response = (char) svm_.predict(Inputdata);
+            response = (char)svm_.predict(Inputdata);
         }
 
         if (response == class_data[n]) {
             correct++;
         } else {
-
             miss++;
             for (j = 0; j < Y_SIZE; j++) {
                 for (i = 0; i < X_SIZE; i++) {
                     miss_recog->imageData[miss_recog->widthStep * j + i] =
-                        (char) feature_data[n][i][j].I;
+                        (char)feature_data[n][i][j].I;
                 }
                 /*
                 for (i = 0; i < X_SIZE; i++) {
-                  miss_recog->imageData[miss_recog->widthStep * j + i + X_SIZE] =
-                    (char) feature_data[min_char_data][i][j].I;
+                  miss_recog->imageData[miss_recog->widthStep * j + i + X_SIZE]
+                = (char) feature_data[min_char_data][i][j].I;
                 }
                 */
             }
-            sprintf(file_num, "%s/err-%d-%c-%c.png",
-                    ERR_DIR, n,
+            sprintf(file_num,
+                    "%s/err-%d-%c-%c.png",
+                    ERR_DIR,
+                    n,
                     class_data[n],
                     response);
             printf("miss image : %s\n", file_num);
             printf("class = %c, response = %c\n", class_data[n], response);
             try {
                 cvSaveImage(file_num, miss_recog);
-            } catch (cv::Exception &e) {
+            } catch (cv::Exception& e) {
                 const char* err_msg = e.what();
                 // printf("%s\n", err_msg);
             }
@@ -575,7 +594,9 @@ leave_one_out_test(feature_db * db)
 
         // printf("correct = %d, miss = %d\n",correct,miss);
         printf("Recog-rate = %0.3f (= %d / %d )\n",
-               (double) correct / (n + 1), correct, n + 1);
+               (double)correct / (n + 1),
+               correct,
+               n + 1);
     }
 
 #else /* USE_SVM */
@@ -586,8 +607,7 @@ leave_one_out_test(feature_db * db)
         // 最近傍検索ループ
         for (m = 0; m < nitems; m++) {
             if (m != n) {
-                dist = DIRP_Dist(&feature_data[n],
-                                 &feature_data[m]);
+                dist = DIRP_Dist(&feature_data[n], &feature_data[m]);
                 if (dist < min_dist) {
                     min_dist = dist;
                     min_char_data = m;
@@ -608,18 +628,23 @@ leave_one_out_test(feature_db * db)
                         (char)feature_data[n][i][j].I;
                 }
                 for (i = 0; i < X_SIZE; i++) {
-                    miss_recog->imageData[miss_recog->widthStep * j + i + X_SIZE] =
+                    miss_recog
+                        ->imageData[miss_recog->widthStep * j + i + X_SIZE] =
                         (char)feature_data[(int)min_char_data][i][j].I;
                 }
             }
-            sprintf(file_num, "%s/err-%d-%c-%d-%c-%d.png",
-                    ERR_DIR, miss,
-                    class_data[n], n,
-                    class_data[(int)min_char_data], (int)min_char_data);
-            printf("miss image : %s\n",file_num);
+            sprintf(file_num,
+                    "%s/err-%d-%c-%d-%c-%d.png",
+                    ERR_DIR,
+                    miss,
+                    class_data[n],
+                    n,
+                    class_data[(int)min_char_data],
+                    (int)min_char_data);
+            printf("miss image : %s\n", file_num);
             try {
                 cvSaveImage(file_num, miss_recog);
-            } catch (cv::Exception &e) {
+            } catch (cv::Exception& e) {
                 const char* err_msg = e.what();
                 // printf("%s\n", err_msg);
             }
@@ -628,7 +653,9 @@ leave_one_out_test(feature_db * db)
 #endif
 
     printf("Recog-rate = %g (= %d / %d )\n",
-           (double)correct / nitems, correct, nitems);
+           (double)correct / nitems,
+           correct,
+           nitems);
 
     // KEY_WAIT;
 
@@ -638,22 +665,22 @@ leave_one_out_test(feature_db * db)
 /* ============================================================
  * 文字認識用ドライバ
  * ============================================================ */
-char *
+char*
 #ifdef USE_SVM
-recognize(CvSVM *db, IplImage *src_img)
+recognize(CvSVM* db, IplImage* src_img)
 #else
-recognize(feature_db *db,  IplImage *src_img)
+recognize(feature_db* db, IplImage* src_img)
 #endif
 {
-    double      min_dist, dist;
-    int         min_char_data;
-    int         n, nitems;
-    int         i, j, d;
-    char        result [2];
+    double min_dist, dist;
+    int    min_char_data;
+    int    n, nitems;
+    int    i, j, d;
+    char   result[2];
 
-    char           *class_data;
-    double      total = 0;
-    DIRP        target_data[Y_SIZE][X_SIZE];
+    char*  class_data;
+    double total = 0;
+    DIRP   target_data[Y_SIZE][X_SIZE];
 
 #ifdef THINNING
     int features[N][N][ANGLES];
@@ -661,19 +688,22 @@ recognize(feature_db *db,  IplImage *src_img)
     if (Extract_Feature(cv::cvarrToMat(src_img, true), features))
         return 0;
 
-    CvMat *feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
+    CvMat* feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (int k = 0; k < ANGLES; k++) {
-                cvmSet(feature_mat, 0, i * N * ANGLES + j * ANGLES + k,
+                cvmSet(feature_mat,
+                       0,
+                       i * N * ANGLES + j * ANGLES + k,
                        features[j][i][k]);
             }
         }
     }
 
 #else
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    datafolder      *df;
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    datafolder* df;
 
     //
     // 特徴抽出
@@ -697,22 +727,24 @@ recognize(feature_db *db,  IplImage *src_img)
 #ifdef USE_SVM
 
 #ifdef THINNING
-    char response = (char) db->predict(feature_mat);
+    char response = (char)db->predict(feature_mat);
 #else
     /* data packing and recognization */
-    int kk;
+    int  kk;
     char response;
 
-    CvMat *Inputdata = cvCreateMat(1, Y_SIZE * X_SIZE * 4, CV_32FC1);
+    CvMat* Inputdata = cvCreateMat(1, Y_SIZE * X_SIZE * 4, CV_32FC1);
     for (i = 0; i < Y_SIZE; ++i) {
         for (j = 0; j < X_SIZE; ++j) {
             for (kk = 0; kk < 4; ++kk) {
-                cvmSet(Inputdata, 0, i * X_SIZE * 4 + j * 4 + kk,
-                       (float) target_data[i][j].d[kk]);
+                cvmSet(Inputdata,
+                       0,
+                       i * X_SIZE * 4 + j * 4 + kk,
+                       (float)target_data[i][j].d[kk]);
             }
         }
     }
-    response = (char) db->predict(Inputdata);
+    response = (char)db->predict(Inputdata);
 #endif
 
 #ifndef LIBRARY
@@ -731,8 +763,8 @@ recognize(feature_db *db,  IplImage *src_img)
         return 0;
     }
     nitems = db->nitems;
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-    class_data = (char *)db + db->class_offset;
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+    class_data = (char*)db + db->class_offset;
     min_char_data = -1;
     min_dist = 1e10;
 
@@ -761,29 +793,30 @@ recognize(feature_db *db,  IplImage *src_img)
     return strdup(result);
 }
 
-char *
+char*
 #ifdef USE_SVM
-recognize_multi(CvSVM *db, IplImage *src_img)
+recognize_multi(CvSVM* db, IplImage* src_img)
 #else
-recognize_multi(feature_db *db, IplImage *src_img)
+recognize_multi(feature_db* db, IplImage* src_img)
 #endif
 {
-    double      min_dist, dist;
-    int         min_char_data;
-    int         n, nitems;
-    int         i, j, d;
-    IplImage       *dst_img = NULL;
-    CvRect      bb;
-    IplImage       *part_img, *body;
-    int         seq_num, start_x, width, next_start;
-    char        result_char, filename[BUFSIZ], *result_str;
+    double    min_dist, dist;
+    int       min_char_data;
+    int       n, nitems;
+    int       i, j, d;
+    IplImage* dst_img = NULL;
+    CvRect    bb;
+    IplImage *part_img, *body;
+    int       seq_num, start_x, width, next_start;
+    char      result_char, filename[BUFSIZ], *result_str;
 
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    char           *class_data;
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    char*       class_data;
     DIRP        target_data[Y_SIZE][X_SIZE];
-    datafolder     *df;
+    datafolder* df;
 
-    double      total = 0;
+    double total = 0;
 
     if (src_img == NULL)
         return NULL;
@@ -801,8 +834,8 @@ recognize_multi(feature_db *db, IplImage *src_img)
     // void cvSetImageROI(IplImage *img, CvRect rect):
     // imgの矩形範囲に着目(ROI)
     cvSetImageROI(src_img, bb);
-    //void cvCopy( const CvArr* src, CvArr* dst, const CvArr* mask=NULL ):
-    // 配列dstに配列srcの内容をコピー
+    // void cvCopy( const CvArr* src, CvArr* dst, const CvArr* mask=NULL ):
+    //  配列dstに配列srcの内容をコピー
     cvCopy(src_img, body, NULL);
 
     start_x = 0;
@@ -810,7 +843,7 @@ recognize_multi(feature_db *db, IplImage *src_img)
 
     width = body->width;
 
-    result_str = (char *)malloc(sizeof(char) * MAXSTRLEN);
+    result_str = (char*)malloc(sizeof(char) * MAXSTRLEN);
     // void *memset(void *buf, int ch, size_t n):
     // buf の先頭から n バイト分 ch をセット
     memset(result_str, 0, sizeof(char) * MAXSTRLEN);
@@ -821,9 +854,9 @@ recognize_multi(feature_db *db, IplImage *src_img)
         if (part_img == NULL || part_img->width == 0)
             break;
 
-        //
-        // 特徴抽出
-        //
+            //
+            // 特徴抽出
+            //
 
 #ifdef THINNING
         int features[N][N][ANGLES];
@@ -831,11 +864,13 @@ recognize_multi(feature_db *db, IplImage *src_img)
         if (Extract_Feature(cv::cvarrToMat(part_img, true), features))
             return 0;
 
-        CvMat *feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
+        CvMat* feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++) {
                 for (int k = 0; k < ANGLES; k++) {
-                    cvmSet(feature_mat, 0, i * N * ANGLES + j * ANGLES + k,
+                    cvmSet(feature_mat,
+                           0,
+                           i * N * ANGLES + j * ANGLES + k,
                            features[j][i][k]);
                 }
             }
@@ -852,8 +887,7 @@ recognize_multi(feature_db *db, IplImage *src_img)
         for (i = 0; i < Y_SIZE; i++) {
             for (j = 0; j < X_SIZE; j++) {
                 for (d = 0; d < 4; d++) {
-                    target_data[i][j].d[d] =
-                        df->Data[i][j].d[d];
+                    target_data[i][j].d[d] = df->Data[i][j].d[d];
                 }
                 target_data[i][j].I = df->Data[i][j].I;
             }
@@ -863,22 +897,24 @@ recognize_multi(feature_db *db, IplImage *src_img)
 #ifdef USE_SVM
 
 #ifdef THINNING
-        result_char = (char) db->predict(feature_mat);
+        result_char = (char)db->predict(feature_mat);
 #else
         /* data packing and recognization */
-        int kk;
+        int  kk;
         char response;
 
-        CvMat *Inputdata = cvCreateMat(1, Y_SIZE * X_SIZE * 4, CV_32FC1);
+        CvMat* Inputdata = cvCreateMat(1, Y_SIZE * X_SIZE * 4, CV_32FC1);
         for (i = 0; i < Y_SIZE; ++i) {
             for (j = 0; j < X_SIZE; ++j) {
                 for (kk = 0; kk < 4; ++kk) {
-                    cvmSet(Inputdata, 0, i * X_SIZE * 4 + j * 4 + kk,
-                           (float) target_data[i][j].d[kk]);
+                    cvmSet(Inputdata,
+                           0,
+                           i * X_SIZE * 4 + j * 4 + kk,
+                           (float)target_data[i][j].d[kk]);
                 }
             }
         }
-        result_char = (char) db->predict(Inputdata);
+        result_char = (char)db->predict(Inputdata);
 #endif
 
         *(result_str + seq_num) = result_char;
@@ -897,8 +933,9 @@ recognize_multi(feature_db *db, IplImage *src_img)
             return NULL;
         }
         nitems = db->nitems;
-        feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-        class_data = (char *)db + db->class_offset;
+        feature_data =
+            (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+        class_data = (char*)db + db->class_offset;
         min_char_data = -1;
         min_dist = 1e10;
 
@@ -920,8 +957,7 @@ recognize_multi(feature_db *db, IplImage *src_img)
 
 #ifndef LIBRARY
         // 結果を出力する
-        printf("Recogized: %c (%f)\n",
-               class_data[min_char_data], min_dist);
+        printf("Recogized: %c (%f)\n", class_data[min_char_data], min_dist);
         printf("Credibility score %2.2f\n", 1 - n * min_dist / total);
 #endif
 
@@ -938,14 +974,14 @@ recognize_multi(feature_db *db, IplImage *src_img)
 }
 
 #ifdef USE_SVM
-static char *
-recog_image(CvSVM *db, IplImage *src_img)
+static char*
+recog_image(CvSVM* db, IplImage* src_img)
 #else
-static char *
-recog_image(feature_db *db, IplImage *src_img)
+static char*
+recog_image(feature_db* db, IplImage* src_img)
 #endif
 {
-    char           *result;
+    char* result;
 
     if (src_img->width / src_img->height > THRES_RATIO)
         result = recognize_multi(db, src_img);
@@ -960,16 +996,16 @@ recog_image(feature_db *db, IplImage *src_img)
  * 精度管理用関数
  * ============================================================ */
 void
-print_line(char *file, int n)
+print_line(char* file, int n)
 {
-    FILE           *fp;
-    char           *line_buf = NULL;
-    size_t      len;
-    int         m = 0;
+    FILE*  fp;
+    char*  line_buf = NULL;
+    size_t len;
+    int    m = 0;
 
-    static char   **cache_lines = NULL;
-    static char    *cache_file = NULL;
-    static int      n_lines = 0; //ファイルの行数
+    static char** cache_lines = NULL;
+    static char*  cache_file = NULL;
+    static int    n_lines = 0; //ファイルの行数
 
     if (cache_file && n < n_lines) {
         printf("%s", cache_lines[n]);
@@ -985,7 +1021,7 @@ print_line(char *file, int n)
     }
 
     if (cache_lines == NULL) {
-        cache_lines = (char **)malloc(sizeof(char *) * n_lines);
+        cache_lines = (char**)malloc(sizeof(char*) * n_lines);
     }
     fclose(fp);
 
@@ -1013,18 +1049,19 @@ print_line(char *file, int n)
 }
 
 void
-exclude(feature_db * db, char *lst_name)
+exclude(feature_db* db, char* lst_name)
 {
-    double      min_dist, dist;
-    int         min_char_data;
-    int         i, j, n, m;
-    int         correct;
-    int         miss;
-    int         nitems; // 画像数
-    char        file_num     [300];
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    char           *class_data;
-    int            *deleted;
+    double min_dist, dist;
+    int    min_char_data;
+    int    i, j, n, m;
+    int    correct;
+    int    miss;
+    int    nitems; // 画像数
+    char   file_num[300];
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    char* class_data;
+    int*  deleted;
 
     // データベースファイル識別
     if (db->magic != MAGIC_NO) {
@@ -1032,9 +1069,9 @@ exclude(feature_db * db, char *lst_name)
     }
 
     nitems = db->nitems;
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-    class_data = (char *)db + db->class_offset;
-    deleted = (int *)calloc(nitems, sizeof(int));
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+    class_data = (char*)db + db->class_offset;
+    deleted = (int*)calloc(nitems, sizeof(int));
 
     fprintf(stderr, "# Excluding failure cases...\n");
     fprintf(stderr, "%s\n", lst_name);
@@ -1049,8 +1086,7 @@ exclude(feature_db * db, char *lst_name)
             // 最近傍探索
             for (m = 0; m < nitems; m++) {
                 if (m != n && !deleted[m]) {
-                    dist = DIRP_Dist(&feature_data[n],
-                                     &feature_data[m]);
+                    dist = DIRP_Dist(&feature_data[n], &feature_data[m]);
                     if (dist < min_dist) {
                         min_dist = dist;
                         min_char_data = m;
@@ -1068,30 +1104,34 @@ exclude(feature_db * db, char *lst_name)
         }
     } while (miss > 0);
 
-    fprintf(stderr, "Recog-rate = %g (= %d / %d )\n",
-            (double)correct / nitems, correct, nitems);
+    fprintf(stderr,
+            "Recog-rate = %g (= %d / %d )\n",
+            (double)correct / nitems,
+            correct,
+            nitems);
     free(deleted);
 }
 
 void
-distance(feature_db * db, char *lst_name)
+distance(feature_db* db, char* lst_name)
 {
-    double      min_dist, dist;
-    int         min_char_data;
-    int         i, j, n, m;
-    int         correct;
-    int         miss;
-    int         nitems;
-    char        file_num     [300];
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    char           *class_data;
+    double min_dist, dist;
+    int    min_char_data;
+    int    i, j, n, m;
+    int    correct;
+    int    miss;
+    int    nitems;
+    char   file_num[300];
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    char* class_data;
 
     if (db->magic != MAGIC_NO) {
         return;
     }
     nitems = db->nitems;
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-    class_data = (char *)db + db->class_offset;
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+    class_data = (char*)db + db->class_offset;
 
     fprintf(stderr, "# Measuring distance to nearest stranger...\n");
     fprintf(stderr, "%s\n", lst_name);
@@ -1104,8 +1144,7 @@ distance(feature_db * db, char *lst_name)
         for (m = 0; m < nitems; m++) {
             if (m == n || class_data[n] == class_data[m])
                 continue;
-            dist = DIRP_Dist(&feature_data[n],
-                             &feature_data[m]);
+            dist = DIRP_Dist(&feature_data[n], &feature_data[m]);
             if (dist < min_dist) {
                 min_dist = dist;
                 min_char_data = m;
@@ -1116,35 +1155,39 @@ distance(feature_db * db, char *lst_name)
         print_line(lst_name, n);
     }
 
-    fprintf(stderr, "Recog-rate = %g (= %d / %d )\n",
-            (double)correct / nitems, correct, nitems);
+    fprintf(stderr,
+            "Recog-rate = %g (= %d / %d )\n",
+            (double)correct / nitems,
+            correct,
+            nitems);
 }
 
 void
-average(feature_db * db, char *lst_name)
+average(feature_db* db, char* lst_name)
 {
-    double      dist;
-    int         i, j, m, n, d, c;
-    int         nitems;
-    DIRP_D      feature_sum[Y_SIZE][X_SIZE];//クラスごとの特徴量の総和
-    DIRP        feature_ave[Y_SIZE][X_SIZE];//クラスごとの特徴量の平均
-    DIRP(*feature_data)[Y_SIZE][X_SIZE];
-    char           *class_data;
-    int         n_class;
-    bool        classes[256];
+    double dist;
+    int    i, j, m, n, d, c;
+    int    nitems;
+    DIRP_D feature_sum[Y_SIZE][X_SIZE]; //クラスごとの特徴量の総和
+    DIRP   feature_ave[Y_SIZE][X_SIZE]; //クラスごとの特徴量の平均
+    DIRP(*feature_data)
+    [Y_SIZE][X_SIZE];
+    char* class_data;
+    int   n_class;
+    bool  classes[256];
 
     if (db->magic != MAGIC_NO) {
         return;
     }
     nitems = db->nitems;
-    feature_data = (DIRP(*)[Y_SIZE][X_SIZE]) ((char *)db + db->feature_offset);
-    class_data = (char *)db + db->class_offset;
+    feature_data = (DIRP(*)[Y_SIZE][X_SIZE])((char*)db + db->feature_offset);
+    class_data = (char*)db + db->class_offset;
 
     fprintf(stderr, "# Measuring average feature...\n");
     fprintf(stderr, "%s\n", lst_name);
 
     for (c = 0; c < 256; c++) {
-        classes[class_data[c]] = false;//classes[c]の間違い？
+        classes[class_data[c]] = false; // classes[c]の間違い？
     }
 
     for (n = 0; n < nitems; n++) {
@@ -1152,7 +1195,7 @@ average(feature_db * db, char *lst_name)
     }
 
     for (c = 0; c < 256; c++) {
-        if (classes[c] == false)//クラスが存在しない場合
+        if (classes[c] == false) //クラスが存在しない場合
             continue;
 
         // feature reset
@@ -1174,8 +1217,7 @@ average(feature_db * db, char *lst_name)
             for (i = 0; i < Y_SIZE; i++) {
                 for (j = 0; j < X_SIZE; j++) {
                     for (d = 0; d < 4; d++) {
-                        feature_sum[i][j].d[d] +=
-                            feature_data[n][i][j].d[d];
+                        feature_sum[i][j].d[d] += feature_data[n][i][j].d[d];
                     }
                 }
             }
@@ -1197,8 +1239,7 @@ average(feature_db * db, char *lst_name)
             if (class_data[n] != c)
                 continue;
 
-            dist = DIRP_Dist(&feature_ave,
-                             &feature_data[n]);
+            dist = DIRP_Dist(&feature_ave, &feature_data[n]);
 
             printf("%4.1f\t", dist);
             print_line(lst_name, n);
@@ -1210,16 +1251,16 @@ average(feature_db * db, char *lst_name)
  * DBファイル判別関数
  * ============================================================ */
 int
-is_database(const char *file_name)
+is_database(const char* file_name)
 {
-    feature_db     *db;
+    feature_db* db;
     int         fd, magic;
 
-    db = (feature_db *) malloc(sizeof(*db));
+    db = (feature_db*)malloc(sizeof(*db));
     if ((fd = open(file_name, O_RDONLY)) < 0) {
         return 0;
     }
-    if (read(fd, (void *)db, sizeof(*db)) < sizeof(*db)) {
+    if (read(fd, (void*)db, sizeof(*db)) < sizeof(*db)) {
         return 0;
     }
     magic = db->magic;
@@ -1231,12 +1272,12 @@ is_database(const char *file_name)
 }
 
 int
-is_opencvxml(const char *file_name)
+is_opencvxml(const char* file_name)
 {
-    FILE *fp;
-    size_t len;
+    FILE*   fp;
+    size_t  len;
     ssize_t read;
-    char *line = NULL;
+    char*   line = NULL;
 
     if ((fp = fopen(file_name, "r")) == NULL) {
         return FALSE;
@@ -1263,15 +1304,15 @@ is_opencvxml(const char *file_name)
  */
 
 void
-kocr_exclude(feature_db *db, char *lst_name)
+kocr_exclude(feature_db* db, char* lst_name)
 {
     if (db == NULL || lst_name == NULL)
         return;
-    exclude(db,lst_name);
+    exclude(db, lst_name);
 }
 
 void
-kocr_distance(feature_db *db, char *lst_name)
+kocr_distance(feature_db* db, char* lst_name)
 {
     if (db == NULL || lst_name == NULL)
         return;
@@ -1279,7 +1320,7 @@ kocr_distance(feature_db *db, char *lst_name)
 }
 
 void
-kocr_average(feature_db *db, char *lst_name)
+kocr_average(feature_db* db, char* lst_name)
 {
     if (db == NULL || lst_name == NULL)
         return;
@@ -1287,13 +1328,13 @@ kocr_average(feature_db *db, char *lst_name)
 }
 
 #ifdef USE_SVM
-CvSVM *
-kocr_svm_init(char *filename)
+CvSVM*
+kocr_svm_init(char* filename)
 {
-    CvSVM *svm;
+    CvSVM* svm;
 
     if (filename == NULL)
-        return (CvSVM *) NULL;
+        return (CvSVM*)NULL;
 
     svm = new CvSVM();
     svm->load(filename);
@@ -1301,20 +1342,21 @@ kocr_svm_init(char *filename)
     return svm;
 }
 #else
-feature_db *
-kocr_init(char *filename)
+feature_db*
+kocr_init(char* filename)
 {
-    if (filename == NULL) return NULL;
+    if (filename == NULL)
+        return NULL;
     return db_load(filename);
 }
 #endif
 
 #ifdef USE_SVM
-char *
-kocr_recognize_Image(CvSVM *db, IplImage *src_img)
+char*
+kocr_recognize_Image(CvSVM* db, IplImage* src_img)
 #else
-char *
-kocr_recognize_Image(feature_db *db, IplImage *src_img)
+char*
+kocr_recognize_Image(feature_db* db, IplImage* src_img)
 #endif
 {
     if (db == NULL || src_img == NULL)
@@ -1324,20 +1366,20 @@ kocr_recognize_Image(feature_db *db, IplImage *src_img)
 }
 
 #ifdef USE_SVM
-char *
-kocr_recognize_image(CvSVM *db, char *file_name)
+char*
+kocr_recognize_image(CvSVM* db, char* file_name)
 #else
-char *
-kocr_recognize_image(feature_db *db, char *file_name)
+char*
+kocr_recognize_image(feature_db* db, char* file_name)
 #endif
 {
-    IplImage       *src_img;
-    char *c;
+    IplImage* src_img;
+    char*     c;
 
     if (db == NULL || file_name == NULL)
         return NULL;
 
-    // 元画像を読み込む
+        // 元画像を読み込む
 #if 0
     src_img = cvLoadImage(file_name,
                           CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -1348,8 +1390,9 @@ kocr_recognize_image(feature_db *db, char *file_name)
 
     // OpenCVはGIFを扱えないらしい
     if (!src_img) {
-        char *p = file_name;
-        for (; *p; ++p) *p = tolower(*p);
+        char* p = file_name;
+        for (; *p; ++p)
+            *p = tolower(*p);
         if (strstr(file_name, ".gif")) {
             printf("This program doesn't support GIF images.\n");
         }
@@ -1364,7 +1407,7 @@ kocr_recognize_image(feature_db *db, char *file_name)
 
 #ifdef USE_SVM
 void
-kocr_svm_finish(CvSVM *svm)
+kocr_svm_finish(CvSVM* svm)
 {
     if (svm != NULL) {
         delete svm;
@@ -1372,7 +1415,7 @@ kocr_svm_finish(CvSVM *svm)
 }
 #else
 void
-kocr_finish(feature_db *db)
+kocr_finish(feature_db* db)
 {
     if (db != NULL) {
         free(db);

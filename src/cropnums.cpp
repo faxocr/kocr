@@ -32,18 +32,18 @@
 
 #define BWNOISE_THRESHOLD 95
 
-#define max(a,b) (((a)>(b))?(a):(b))
-#define min(a,b) (((a)<(b))?(a):(b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 CvRect
-findBB(IplImage * imgSrc)
+findBB(IplImage* imgSrc)
 {
-    int         minX, minY, maxX, maxY;
-    CvScalar        s, white;
-    int         x, y;
-    CvRect      rect;
+    int      minX, minY, maxX, maxY;
+    CvScalar s, white;
+    int      x, y;
+    CvRect   rect;
 
-    white = cvGet2D(imgSrc, 0, 0);  /* XXX */
+    white = cvGet2D(imgSrc, 0, 0); /* XXX */
 
     minX = imgSrc->width;
     minY = imgSrc->height;
@@ -61,8 +61,8 @@ findBB(IplImage * imgSrc)
             }
         }
     }
-    if (minX == imgSrc->width && minY == imgSrc->height &&
-            maxX == 0 && maxY == 0) { /* when all white */
+    if (minX == imgSrc->width && minY == imgSrc->height && maxX == 0
+        && maxY == 0) { /* when all white */
         rect = cvRect(0, 0, imgSrc->width, imgSrc->height);
     } else {
         rect = cvRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
@@ -70,18 +70,18 @@ findBB(IplImage * imgSrc)
     return rect;
 }
 
-IplImage       *
-cropnum(IplImage * src_img, int startx, int *nextstart)
+IplImage*
+cropnum(IplImage* src_img, int startx, int* nextstart)
 {
-    IplImage       *result;
-    CvMat       dataA;
-    CvRect      bba, rect;
-    //bounding box
+    IplImage* result;
+    CvMat     dataA;
+    CvRect    bba, rect;
+    // bounding box
     CvScalar maxVal;
-    CvScalar        val = cvRealScalar(0);
+    CvScalar val = cvRealScalar(0);
 
-    int         size, x, y;
-    int         allwhite, state;
+    int size, x, y;
+    int allwhite, state;
 
     state = 0;
     bba.y = 0;
@@ -95,7 +95,7 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
     maxVal = cvRealScalar(src_img->height * ((1 << (src_img->depth)) - 1));
 
     for (x = startx; x < src_img->width; x++) {
-        CvMat       data;
+        CvMat data;
 #ifdef DEBUG
         printf("x:%d %d\n", x, src_img->width);
 #endif
@@ -137,11 +137,15 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
 
     *nextstart = x;
 
-    //bba is rectangle of a Number
+    // bba is rectangle of a Number
 #ifdef DEBUG
     printf("BB: %d,%d - %d,%d from %d,%d\n",
-           bba.x, bba.y, bba.width, bba.height,
-           src_img->width, src_img->height);
+           bba.x,
+           bba.y,
+           bba.width,
+           bba.height,
+           src_img->width,
+           src_img->height);
 #endif
 
     cvSetImageROI(src_img, bba);
@@ -149,13 +153,16 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
     rect = cvGetImageROI(src_img);
 #ifdef DEBUG
     printf("src:  x=%d, y=%d, width=%d, height=%d\n",
-           rect.x, rect.y,
-           rect.width, rect.height);
+           rect.x,
+           rect.y,
+           rect.width,
+           rect.height);
 #endif
 
-    //create a image with bba
+    // create a image with bba
     result = cvCreateImage(cvSize(rect.width, rect.height),
-                           src_img->depth, src_img->nChannels);
+                           src_img->depth,
+                           src_img->nChannels);
 
     if (result == NULL)
         return NULL;
@@ -164,26 +171,27 @@ cropnum(IplImage * src_img, int startx, int *nextstart)
 
 #ifdef DEBUG
     printf("dst: depth=%d, width=%d, height=%d\n",
-           result->depth, result->width, result->height);
+           result->depth,
+           result->width,
+           result->height);
 #endif
 
-    //copy rectangle part of src_img to result image
+    // copy rectangle part of src_img to result image
     cvCopy(src_img, result, NULL);
     cvResetImageROI(src_img);
 
     return result;
-
 }
 
 static void
-do_split(IplImage * src_img)
+do_split(IplImage* src_img)
 {
-    CvRect      bb;
-    IplImage       *part_img, *body;
-    int         seqnum, startx, width, nextstart;
-    char        filename[BUFSIZ];
+    CvRect    bb;
+    IplImage *part_img, *body;
+    int       seqnum, startx, width, nextstart;
+    char      filename[BUFSIZ];
 
-    //crop with BB of all chars
+    // crop with BB of all chars
     bb = findBB(src_img);
     body = cvCreateImage(cvSize(bb.width, bb.height), src_img->depth, 1);
     cvSet(body, CV_RGB(255, 255, 255), NULL);
@@ -199,7 +207,7 @@ do_split(IplImage * src_img)
         part_img = cropnum(body, startx, &nextstart);
         if (part_img == NULL || part_img->width == 0)
             break;
-        //NOTE:do something other than saving image here
+            // NOTE:do something other than saving image here
 #ifdef DEBUG
         sprintf(filename, "file%03d.png", seqnum);
         cvSaveImage(filename, part_img, 0);
@@ -213,30 +221,30 @@ do_split(IplImage * src_img)
 
 #ifdef UNIT_TEST
 static void
-err_exit() {
+err_exit()
+{
     fprintf(stderr, "error\n");
     exit(1);
 }
 
 int
-main(int argc, char **argv)
+main(int argc, char** argv)
 {
-    IplImage       *src_img = NULL, *dst_img = NULL;
-    int         newwidth = 0;
-    IplImage       *prs_img;
+    IplImage *src_img = NULL, *dst_img = NULL;
+    int       newwidth = 0;
+    IplImage* prs_img;
 
     if (argc < 2) {
         fprintf(stderr, "usage: cropnums inputfile\n");
         exit(1);
     }
 
-    src_img = cvLoadImage(argv[1], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR
-                         );
+    src_img =
+        cvLoadImage(argv[1], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
     if (src_img == NULL)
         err_exit();
 
-    dst_img = cvCreateImage(cvSize(src_img->width, src_img->height),
-                            8, 1);
+    dst_img = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
 #if 0
     //pre - processing
     {
@@ -255,7 +263,7 @@ main(int argc, char **argv)
 #endif
 
     cvThreshold(src_img, dst_img, 120, 255, CV_THRESH_BINARY);
-    //dst_img is BW format
+    // dst_img is BW format
     do_split(dst_img);
 
     cvReleaseImage(&src_img);

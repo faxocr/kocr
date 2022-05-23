@@ -30,18 +30,18 @@
 #define SUBR_H
 
 /* prototypes */
-short   Contour_Detect(IplImage *);
-void    Contour_To_Directional_Pattern(short);
-void    Blurring();
-void    Equalize_Intensity();
-void    Equalize_Directional_Pattern();
-int     Compare(const void *, const void *);
-void    Make_Intensity(IplImage *);
-void    Blur_Intensity();
-double  DIRP_Dist(DIRP (*)[N][N], DIRP (*)[N][N]);
-int extract_feature(IplImage *, datafolder **);
-void    extract_feature_wrapper(char *, datafolder **);
-int db_save(char *, feature_db *);
+short  Contour_Detect(IplImage*);
+void   Contour_To_Directional_Pattern(short);
+void   Blurring();
+void   Equalize_Intensity();
+void   Equalize_Directional_Pattern();
+int    Compare(const void*, const void*);
+void   Make_Intensity(IplImage*);
+void   Blur_Intensity();
+double DIRP_Dist(DIRP (*)[N][N], DIRP (*)[N][N]);
+int    extract_feature(IplImage*, datafolder**);
+void   extract_feature_wrapper(char*, datafolder**);
+int    db_save(char*, feature_db*);
 
 #ifdef __cplusplus
 #define _EX_DECL
@@ -52,6 +52,7 @@ int db_save(char *, feature_db *);
 #ifdef __cplusplus
 extern "C"
 #endif
-_EX_DECL feature_db *db_load(char *);
+    _EX_DECL feature_db*
+    db_load(char*);
 
 #endif /* SUBR_H */

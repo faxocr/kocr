@@ -27,7 +27,6 @@
 
 #ifndef _CROPNUMS_H_
 #define _CROPNUMS_H_
-CvRect findBB(IplImage *imgSrc);
-IplImage * cropnum(IplImage *src_img, int startx, int *nextstart);
+CvRect    findBB(IplImage* imgSrc);
+IplImage* cropnum(IplImage* src_img, int startx, int* nextstart);
 #endif
-

@@ -30,27 +30,26 @@
  * DIRPデータ生成に必要なルーチン
  *===================================================================*/
 
-#define _USE_MATH_DEFINES  // M_PIとかを有効に
+#define _USE_MATH_DEFINES // M_PIとかを有効に
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #ifdef USE_SVM
 #include <opencv/ml.h>
 #endif
+#include "Labeling.h"
 #include "kocr.h"
 #include "subr.h"
-#include "Labeling.h"
 
 /* sigma^2=4 */
 /*
@@ -62,7 +61,7 @@
  */
 
 /* sigma^2=2 */
-static double   Gausss[][5] = {
+static double Gausss[][5] = {
     {0.28209, 0.21970, 0.10378, 0.02973, 0.00517},
     {0.21970, 0.17110, 0.08082, 0.02316, 0.00402},
     {0.10378, 0.08082, 0.03818, 0.01094, 0.00190},
@@ -74,7 +73,7 @@ static double   Gausss[][5] = {
  * Global Variables
  *-------------------------------------------------------------------*/
 /* 分散σ^2=4のガウス分布(正規化項は無し) */
-static double   Gauss[][5] = {
+static double Gauss[][5] = {
     {1.0000, 0.8825, 0.6065, 0.3247, 0.1353},
     {0.8825, 0.7788, 0.5353, 0.2865, 0.1194},
     {0.6065, 0.5353, 0.3679, 0.1969, 0.0821},
@@ -83,10 +82,10 @@ static double   Gauss[][5] = {
 };
 
 typedef struct {
-    unsigned char   x;
-    unsigned char   y;
-    unsigned char   nu;
-    double      d;
+    unsigned char x;
+    unsigned char y;
+    unsigned char nu;
+    double        d;
 } SORT;
 
 /*
@@ -94,13 +93,13 @@ typedef struct {
   外部のファイルへの値の受渡しは、dfのみを用いている。
  */
 
-static unsigned char    ContImg[64][64];
-static unsigned char    DirPat[4][N][N];
-static double       Blur[4][N][N];
-static short        ContLen[MAXCONTOUR];
-static double       Blur_I[N][N];
-static Contour *        Cont[MAXCONTOUR];
-static datafolder       df;
+static unsigned char ContImg[64][64];
+static unsigned char DirPat[4][N][N];
+static double        Blur[4][N][N];
+static short         ContLen[MAXCONTOUR];
+static double        Blur_I[N][N];
+static Contour*      Cont[MAXCONTOUR];
+static datafolder    df;
 
 /*===================================================================*
  * 4) 輪郭抽出
@@ -109,18 +108,18 @@ static datafolder       df;
  * cf. 尾崎,谷口,"画像処理--その基礎から応用まで(2nd ed)",pp.211
  *===================================================================*/
 short
-Contour_Detect(IplImage * Normalized)
+Contour_Detect(IplImage* Normalized)
 {
-    short       k, l;
-    short       start_k, start_l;
-    short       front_k, front_l;
-    short       last_k, last_l;
-    short       dk    [8] = {-1, -1, 0, 1, 1, 1, 0, -1};
-    short       dl    [8] = {0, -1, -1, -1, 0, 1, 1, 1};
-    short       inv   [8] = {4, 5, 6, 7, 0, 1, 2, 3};
-    unsigned char   st, d, pixelval1, pixelval2;
-    short       contnum = 0;
-    short       contlen;
+    short         k, l;
+    short         start_k, start_l;
+    short         front_k, front_l;
+    short         last_k, last_l;
+    short         dk[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+    short         dl[8] = { 0, -1, -1, -1, 0, 1, 1, 1 };
+    short         inv[8] = { 4, 5, 6, 7, 0, 1, 2, 3 };
+    unsigned char st, d, pixelval1, pixelval2;
+    short         contnum = 0;
+    short         contlen;
 
     /* Initialize */
     for (k = 0; k < 64; k++)
@@ -130,16 +129,22 @@ Contour_Detect(IplImage * Normalized)
     /* Scanning */
     for (k = 0; k < 64; k++) {
         for (l = 0; l < 64; l++) {
-            pixelval1 = (unsigned char)Normalized->imageData[Normalized->widthStep * l + k];
+            pixelval1 =
+                (unsigned char)
+                    Normalized->imageData[Normalized->widthStep * l + k];
             if (l != 0)
-                pixelval2 = (unsigned char)Normalized->imageData[Normalized->widthStep * (l - 1) + k];
-            if (((pixelval1 == FG && l == 0) || (pixelval1 == FG && pixelval2 == BG)) && (ContImg[k][l] == BG)) {
+                pixelval2 =
+                    (unsigned char)Normalized
+                        ->imageData[Normalized->widthStep * (l - 1) + k];
+            if (((pixelval1 == FG && l == 0)
+                 || (pixelval1 == FG && pixelval2 == BG))
+                && (ContImg[k][l] == BG)) {
                 /* 端点発見 (p_0) */
                 last_k = front_k = start_k = k;
                 last_l = front_l = start_l = l;
 
                 contlen = 0;
-                Cont[contnum] = (Contour *) calloc(100, sizeof(Contour));
+                Cont[contnum] = (Contour*)calloc(100, sizeof(Contour));
                 Cont[contnum][contlen].x = start_k;
                 Cont[contnum][contlen].y = start_l;
                 contlen++;
@@ -167,29 +172,34 @@ Contour_Detect(IplImage * Normalized)
                             continue;
                         if (front_l < 0 || front_l >= 64)
                             continue;
-                        pixelval1 = (unsigned char)Normalized->imageData[Normalized->widthStep * front_l + front_k];
+                        pixelval1 =
+                            (unsigned char)Normalized
+                                ->imageData[Normalized->widthStep * front_l
+                                            + front_k];
                         if (pixelval1 == FG) {
                             ContImg[front_k][front_l] = FG;
                             last_k = front_k;
                             last_l = front_l;
                             break;
                         }
-                    }       /* The end of next point searching loop */
+                    } /* The end of next point searching loop */
                     st = (inv[d % 8] + 1) % 8;
 
                     if ((last_k == start_k) && (last_l == start_l)) {
-                        break;  /* from while(1) */
+                        break; /* from while(1) */
                     } else {
                         Cont[contnum][contlen].x = front_k;
                         Cont[contnum][contlen].y = front_l;
                         contlen++;
 
                         if (((contlen + 1) % 100) == 0) {
-                            Cont[contnum] = (Contour *) realloc(Cont[contnum],
-                                                                (((contlen + 1) / 100 + 1) * 100) * sizeof(Contour));
+                            Cont[contnum] = (Contour*)realloc(
+                                Cont[contnum],
+                                (((contlen + 1) / 100 + 1) * 100)
+                                    * sizeof(Contour));
                         }
                     }
-                }       /* the end of while */
+                } /* the end of while */
 
                 ContLen[contnum] = contlen;
                 contnum++;
@@ -215,10 +225,10 @@ Contour_Detect(IplImage * Normalized)
 void
 Contour_To_Directional_Pattern(short contnum)
 {
-    short       c, l, x, y;
-    short       x1, y1, x2, y2;
-    double      theta;
-    short       d, nu;
+    short  c, l, x, y;
+    short  x1, y1, x2, y2;
+    double theta;
+    short  d, nu;
 
     for (nu = 0; nu < 4; nu++)
         for (x = 0; x < N; x++)
@@ -276,13 +286,13 @@ Contour_To_Directional_Pattern(short contnum)
 void
 Blurring()
 {
-    short       x, y, i, j, nu;
-    double      total_weight, weight;
+    short  x, y, i, j, nu;
+    double total_weight, weight;
 
 #ifdef DEBUG_FILE
-    FILE           *fp;
-    unsigned char   val;
-    char        fname  [100];
+    FILE*         fp;
+    unsigned char val;
+    char          fname[100];
 #endif
 
     total_weight = 0;
@@ -319,12 +329,12 @@ Blurring()
 void
 Equalize_Intensity()
 {
-    short       i, j;
-    long        k;
-    short       step = N * N / 256;
-    SORT           *sortbuf;
+    short i, j;
+    long  k;
+    short step = N * N / 256;
+    SORT* sortbuf;
 
-    sortbuf = (SORT *) calloc(N * N, sizeof(SORT));
+    sortbuf = (SORT*)calloc(N * N, sizeof(SORT));
 
     /* 輝度値一様化 */
     k = 0;
@@ -336,12 +346,12 @@ Equalize_Intensity()
             k++;
         }
     }
-    qsort((void *)sortbuf, N * N, sizeof(SORT), Compare);
+    qsort((void*)sortbuf, N * N, sizeof(SORT), Compare);
     i = 0;
     for (k = 0; k < (N * N); k += step) {
 #ifdef DEBUG
         if (i > 255)
-            fprintf(stderr,"STRANGE value\n");
+            fprintf(stderr, "STRANGE value\n");
 #endif
         for (j = 0; j < step; j++)
             df.Data[sortbuf[k + j].x][sortbuf[k + j].y].I = (unsigned char)i;
@@ -357,13 +367,13 @@ Equalize_Intensity()
 void
 Equalize_Directional_Pattern()
 {
-    short       i, j;
-    unsigned char   nu;
-    long        k;
-    short       step = N * N * 4 / 256;
-    SORT           *sortbuf;
+    short         i, j;
+    unsigned char nu;
+    long          k;
+    short         step = N * N * 4 / 256;
+    SORT*         sortbuf;
 
-    sortbuf = (SORT *) calloc(N * N * 4, sizeof(SORT));
+    sortbuf = (SORT*)calloc(N * N * 4, sizeof(SORT));
 
     /* 方向特徴ヒストグラム一様化 */
     k = 0;
@@ -378,7 +388,7 @@ Equalize_Directional_Pattern()
             }
         }
     }
-    qsort((char *)sortbuf, N * N * 4, sizeof(SORT), Compare);
+    qsort((char*)sortbuf, N * N * 4, sizeof(SORT), Compare);
     i = 0;
     for (k = 0; k < (N * N * 4); k += step) {
 #ifdef DEBUG
@@ -398,15 +408,14 @@ Equalize_Directional_Pattern()
  * qsort用比較関数
  *==================================================================*/
 int
-Compare(const void *i, const void *j)
+Compare(const void* i, const void* j)
 {
-
     // ちょっと心配
-    //printf("%g, ", ((SORT *) i)->d);
+    // printf("%g, ", ((SORT *) i)->d);
 
-    if (((SORT *) i)->d > ((SORT *) j)->d)
+    if (((SORT*)i)->d > ((SORT*)j)->d)
         return (1);
-    if (((SORT *) i)->d < ((SORT *) j)->d)
+    if (((SORT*)i)->d < ((SORT*)j)->d)
         return (-1);
     return (0);
 }
@@ -415,10 +424,10 @@ Compare(const void *i, const void *j)
  * データ出力
  *===================================================================*/
 void
-Make_Intensity(IplImage * Normalized)
+Make_Intensity(IplImage* Normalized)
 {
-    short       i, j, x, y;
-    unsigned char   pixelval;
+    short         i, j, x, y;
+    unsigned char pixelval;
 
     /* 画素値に関して、64x64->16x16 */
     for (i = 0; i < N; i++)
@@ -429,7 +438,8 @@ Make_Intensity(IplImage * Normalized)
         i = (x * N) / 64;
         for (y = 0; y < 64; y++) {
             j = (y * N) / 64;
-            pixelval = (unsigned char)Normalized->imageData[Normalized->widthStep * y + x];
+            pixelval = (unsigned char)
+                           Normalized->imageData[Normalized->widthStep * y + x];
             if (pixelval == FG) {
                 df.Data[i][j].I++;
             }
@@ -438,7 +448,6 @@ Make_Intensity(IplImage * Normalized)
 
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
-
             /* 対応する黒画素が3つ以上の時、黒画素とする */
             if (df.Data[i][j].I > 2)
                 df.Data[i][j].I = 255;
@@ -455,8 +464,8 @@ Make_Intensity(IplImage * Normalized)
 void
 Blur_Intensity()
 {
-    short       x, y, i, j;
-    double      total_weight, weight;
+    short  x, y, i, j;
+    double total_weight, weight;
 
     total_weight = 0;
     for (i = -4; i <= 4; i++)
@@ -472,7 +481,7 @@ Blur_Intensity()
                     if ((x + i >= 0) && (x + i < N)) {
                         if ((y + j >= 0) && (y + j < N)) {
                             Blur_I[x][y] += (double)(df.Data[x + i][y + j].I)
-                                            * Gausss[ABS(i)][ABS(j)];
+                                          * Gausss[ABS(i)][ABS(j)];
                             weight += Gausss[ABS(i)][ABS(j)];
                         }
                     }
@@ -487,17 +496,17 @@ Blur_Intensity()
  * 方向特徴表現された２パターン間の距離
  *===================================================================*/
 double
-DIRP_Dist(DIRP(*A)[N][N], DIRP(*B)[N][N])
+DIRP_Dist(DIRP (*A)[N][N], DIRP (*B)[N][N])
 {
-    int         i, j, d, diff;
-    double      dist = 0.0;
+    int    i, j, d, diff;
+    double dist = 0.0;
 
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             for (d = 0; d < 4; d++) {
-                diff = ABS(((int)A[0][i][j].d[d] -
-                            (int)B[0][i][j].d[d]));
-                //printf("diff %d = ABS (%d - %d)\n", diff, (int)A[i][j].d[d], (int)B[i][j].d[d]);
+                diff = ABS(((int)A[0][i][j].d[d] - (int)B[0][i][j].d[d]));
+                // printf("diff %d = ABS (%d - %d)\n", diff, (int)A[i][j].d[d],
+                // (int)B[i][j].d[d]);
                 dist += diff * diff;
             }
         }
@@ -511,19 +520,18 @@ DIRP_Dist(DIRP(*A)[N][N], DIRP(*B)[N][N])
  *===================================================================*/
 
 void
-extract_feature_wrapper(char *fname, datafolder **retdf)
+extract_feature_wrapper(char* fname, datafolder** retdf)
 {
     int ret;
 
-    IplImage *org_img = cvLoadImage(fname, CV_LOAD_IMAGE_ANYDEPTH |
-                                    CV_LOAD_IMAGE_ANYCOLOR);
+    IplImage* org_img =
+        cvLoadImage(fname, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 
     df.status = 0;
     *retdf = &df;
 
     if (org_img == NULL) {
-        fprintf(stderr, "image file \"%s\": cannot be found.\n",
-                fname);
+        fprintf(stderr, "image file \"%s\": cannot be found.\n", fname);
         df.status = -1;
         return;
     }
@@ -538,28 +546,27 @@ extract_feature_wrapper(char *fname, datafolder **retdf)
 }
 
 int
-extract_feature(IplImage * org_img, datafolder **retdf)
+extract_feature(IplImage* org_img, datafolder** retdf)
 {
-    IplConvKernel  *element;
-    int         custom_shape[MASKSIZE * MASKSIZE];
-    int         i, j, cc, n, m, d;
-    LabelingBS      labeling;
-    short       contnum;
-    char           *ppp;
-    int         count_pix;
+    IplConvKernel* element;
+    int            custom_shape[MASKSIZE * MASKSIZE];
+    int            i, j, cc, n, m, d;
+    LabelingBS     labeling;
+    short          contnum;
+    char*          ppp;
+    int            count_pix;
 
     df.status = 0;
     *retdf = &df;
 
     // 処理後画像データの確保
-    IplImage *dst_img = cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
-    IplImage *dst_img_dilate = cvCreateImage(cvGetSize(org_img),
-                               IPL_DEPTH_8U, 1);
-    IplImage *dst_img_cc = cvCreateImage(cvGetSize(org_img),
-                                         IPL_DEPTH_8U, 1);
+    IplImage* dst_img = cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
+    IplImage* dst_img_dilate =
+        cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
+    IplImage* dst_img_cc = cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
 #if LATTE_CODE
-    IplImage *dst_img_erode = cvCreateImage(cvGetSize(org_img),
-                                            IPL_DEPTH_8U, 1);
+    IplImage* dst_img_erode =
+        cvCreateImage(cvGetSize(org_img), IPL_DEPTH_8U, 1);
 #endif
 
     if (org_img->nChannels > 1) {
@@ -569,11 +576,11 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     }
 
 #ifdef PERIFERAL
-    int            *vproj, *hproj;
-    CvScalar        pixel;
+    int *    vproj, *hproj;
+    CvScalar pixel;
 
     // 垂直射影を取る
-    vproj = (int *)malloc(sizeof(int) * dst_img->width);
+    vproj = (int*)malloc(sizeof(int) * dst_img->width);
     for (x = 0; x < dst_img->width; x++)
         vproj[x] = 0;
     for (y = 0; y < dst_img->height; y++) {
@@ -601,8 +608,11 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     }
 
     // ノイズ除去
-    element = cvCreateStructuringElementEx(MASKSIZE, MASKSIZE, MASKSIZE / 2,
-                                           MASKSIZE / 2, CV_SHAPE_CUSTOM,
+    element = cvCreateStructuringElementEx(MASKSIZE,
+                                           MASKSIZE,
+                                           MASKSIZE / 2,
+                                           MASKSIZE / 2,
+                                           CV_SHAPE_CUSTOM,
                                            custom_shape);
 #if LATTE_CODE
     cvErode(dst_img, dst_img_erode, element, 1);
@@ -615,7 +625,7 @@ extract_feature(IplImage * org_img, datafolder **retdf)
 #endif
 
     // ラベリング処理用の配列に膨張後の画像をコピー
-    unsigned char  *src = new unsigned char[dst_img->height * dst_img->width];
+    unsigned char* src = new unsigned char[dst_img->height * dst_img->width];
     for (i = 0; i < dst_img->width; i++) {
         for (j = 0; j < dst_img->height; j++) {
             // labeling.hでは「0」以外を領域とするので、色の反転を
@@ -627,16 +637,16 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     }
 
     // ラべリング実行　(Labeling.h)
-    short          *cc_result = new short[dst_img->height * dst_img->width];
+    short* cc_result = new short[dst_img->height * dst_img->width];
 
     // true: 領域の大きな順にソートする,しないならfalse
     // 最後の「3」:領域検出の最小領域）
     labeling.Exec(src, cc_result, dst_img->width, dst_img->height, true, 3);
 
-    RegionInfoBS   *ri;
-    int         num_of_cc = labeling.GetNumOfResultRegions();
-    int         size_x, size_y, top_x, top_y, bottom_x, bottom_y;
-    double      aspect_ratio;
+    RegionInfoBS* ri;
+    int           num_of_cc = labeling.GetNumOfResultRegions();
+    int           size_x, size_y, top_x, top_y, bottom_x, bottom_y;
+    double        aspect_ratio;
 
     if (!num_of_cc) {
         df.status = -1;
@@ -661,12 +671,13 @@ extract_feature(IplImage * org_img, datafolder **retdf)
         else
             aspect_ratio = (double)size_y / (double)size_x;
 
-        // 罫線っぽい連結成分をスキップ
+            // 罫線っぽい連結成分をスキップ
 #ifdef LATTE_CODE
-        if (!((aspect_ratio > 10) &&
-                (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
-            if (cc == 0 && (size_y == dst_img_dilate->height ||
-                            size_x == dst_img_dilate->width)) {
+        if (!((aspect_ratio > 10)
+              && (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
+            if (cc == 0
+                && (size_y == dst_img_dilate->height
+                    || size_x == dst_img_dilate->width)) {
                 // printf("keisen, ");
                 count_pix = 0;
 
@@ -680,7 +691,8 @@ extract_feature(IplImage * org_img, datafolder **retdf)
                 }
                 for (j = 0; j < dst_img_cc->height; j++) {
                     for (i = dst_img_cc->width - dst_img_cc->width / 6;
-                            i < dst_img_cc->width; i++) {
+                         i < dst_img_cc->width;
+                         i++) {
                         if (cc_result[dst_img_cc->width * j + i] == cc + 1) {
                             cc_result[dst_img_cc->width * j + i] = 0;
                             count_pix++;
@@ -697,13 +709,15 @@ extract_feature(IplImage * org_img, datafolder **retdf)
                 }
 
                 if (dst_img_dilate->height > dst_img_dilate->width) {
-                    if (ri->GetNumOfPixels() - count_pix > dst_img_dilate->height) {
+                    if (ri->GetNumOfPixels() - count_pix
+                        > dst_img_dilate->height) {
                         // printf("unified, ");
                         count_pix = 0;
                         break;
                     }
                 } else {
-                    if (ri->GetNumOfPixels() - count_pix > dst_img_dilate->width) {
+                    if (ri->GetNumOfPixels() - count_pix
+                        > dst_img_dilate->width) {
                         // printf("unified, ");
                         count_pix = 0;
                         break;
@@ -714,8 +728,8 @@ extract_feature(IplImage * org_img, datafolder **retdf)
             break;
         }
 #else
-        if (!((aspect_ratio > 10) &&
-                (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
+        if (!((aspect_ratio > 10)
+              && (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
             break;
         }
 #endif
@@ -734,16 +748,18 @@ extract_feature(IplImage * org_img, datafolder **retdf)
         }
     }
 
-    IplImage       *cropped
-        = cvCreateImage(cvSize(ABS(top_x - bottom_x) + 1,
-                               ABS(top_y - bottom_y) + 1),
-                        dst_img_cc->depth, dst_img_cc->nChannels);
+    IplImage* cropped = cvCreateImage(
+        cvSize(ABS(top_x - bottom_x) + 1, ABS(top_y - bottom_y) + 1),
+        dst_img_cc->depth,
+        dst_img_cc->nChannels);
 
     // 本当は太らす前の dst_img なはずだが，dst_imgはノイズが多く，
     // 太らした方が安定しているので dst_img_ccを利用
-    cvSetImageROI(dst_img_cc, cvRect(bottom_x, bottom_y,
-                                     ABS(top_x - bottom_x) + 1,
-                                     ABS(top_y - bottom_y) + 1));
+    cvSetImageROI(dst_img_cc,
+                  cvRect(bottom_x,
+                         bottom_y,
+                         ABS(top_x - bottom_x) + 1,
+                         ABS(top_y - bottom_y) + 1));
 
     // 文字部外接矩形の切り出し
     cvCopy(dst_img_cc, cropped);
@@ -752,15 +768,15 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     //==============================================================
     // アスペクト比を維持したまま，マージンをつけて正方形画像に
     int maxside = MAX((ABS(top_x - bottom_x) + 1), (ABS(top_y - bottom_y) + 1));
-    IplImage       *cropped_margin
-        = cvCreateImage(cvSize(maxside, maxside),
-                        dst_img_cc->depth, dst_img_cc->nChannels);
+    IplImage* cropped_margin = cvCreateImage(cvSize(maxside, maxside),
+                                             dst_img_cc->depth,
+                                             dst_img_cc->nChannels);
 
     // 白で初期化
     for (i = 0; i < cropped_margin->width; i++) {
         for (j = 0; j < cropped_margin->height; j++) {
             cropped_margin->imageData[cropped_margin->widthStep * j + i] =
-                (char) 255; /* XXX */
+                (char)255; /* XXX */
         }
     }
 
@@ -769,8 +785,8 @@ extract_feature(IplImage * org_img, datafolder **retdf)
         int jend = (cropped_margin->height + (ABS(top_y - bottom_y) + 1)) / 2;
         for (i = 0; i < cropped_margin->width; i++) {
             for (j = jstart; j < jend; j++) {
-                cropped_margin->imageData[cropped_margin->widthStep * j + i]
-                    = cropped->imageData[cropped->widthStep * (j - jstart) + i];
+                cropped_margin->imageData[cropped_margin->widthStep * j + i] =
+                    cropped->imageData[cropped->widthStep * (j - jstart) + i];
             }
         }
     } else {
@@ -778,16 +794,15 @@ extract_feature(IplImage * org_img, datafolder **retdf)
         int iend = (cropped_margin->width + (ABS(top_x - bottom_x) + 1)) / 2;
         for (i = istart; i < iend; i++) {
             for (j = 0; j < cropped_margin->height; j++) {
-                cropped_margin->imageData[cropped_margin->widthStep * j + i]
-                    = cropped->imageData[cropped->widthStep * j + (i - istart)];
+                cropped_margin->imageData[cropped_margin->widthStep * j + i] =
+                    cropped->imageData[cropped->widthStep * j + (i - istart)];
             }
         }
     }
 
     // 64x64の大きさに正規化
-    IplImage * normalized = cvCreateImage(cvSize(64, 64),
-                                          dst_img_cc->depth,
-                                          dst_img_cc->nChannels);
+    IplImage* normalized =
+        cvCreateImage(cvSize(64, 64), dst_img_cc->depth, dst_img_cc->nChannels);
     cvResize(cropped_margin, normalized, CV_INTER_NN);
 
     // 輪郭線抽出
@@ -795,8 +810,9 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     contnum = Contour_Detect(normalized);
     Contour_To_Directional_Pattern(contnum);
     // 結果はCont[],contnumに入っているので、この領域をfreeする
-    for (int i = 0; i< contnum; i++ ) {
-        if (Cont[i] != NULL) free(Cont[i]);
+    for (int i = 0; i < contnum; i++) {
+        if (Cont[i] != NULL)
+            free(Cont[i]);
     }
 
     // ボカシ処理
@@ -812,18 +828,17 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     Blur_Intensity();
 
 #ifdef DISPLAY_IMAGES
-    IplImage *dir_image = cvCreateImage(cvSize(4 * N, N),
+    IplImage* dir_image = cvCreateImage(cvSize(4 * N, N),
                                         normalized->depth,
                                         normalized->nChannels);
-    IplImage *bdir_image = cvCreateImage(cvSize(4 * N, N),
+    IplImage* bdir_image = cvCreateImage(cvSize(4 * N, N),
                                          normalized->depth,
                                          normalized->nChannels);
-    IplImage *final_image = cvCreateImage(cvSize(4 * N, N),
+    IplImage* final_image = cvCreateImage(cvSize(4 * N, N),
                                           normalized->depth,
                                           normalized->nChannels);
-    IplImage *contour_image = cvCreateImage(cvSize(64, 64),
-                                            normalized->depth,
-                                            normalized->nChannels);
+    IplImage* contour_image =
+        cvCreateImage(cvSize(64, 64), normalized->depth, normalized->nChannels);
 
     /* XXXX char に255をキャストするのっておかしくね？ */
     for (i = 0; i < N; i++) {
@@ -911,7 +926,7 @@ extract_feature(IplImage * org_img, datafolder **retdf)
     cvReleaseImage(&cropped_margin);
     cvReleaseImage(&normalized);
     if (dst_img == org_img) {
-        //a dirty hack for mono
+        // a dirty hack for mono
         cvReleaseImage(&org_img);
     } else {
         cvReleaseImage(&org_img);
@@ -927,17 +942,17 @@ extract_feature(IplImage * org_img, datafolder **retdf)
 }
 
 int
-db_save(char *fname, feature_db * db)
+db_save(char* fname, feature_db* db)
 {
     int fd, w, len;
 
     if ((fd = open(fname, O_WRONLY | O_CREAT, 0644)) < 0) {
         return -1;
     }
-    len = sizeof(feature_db) + sizeof(DIRP[N][N]) * db->nitems +
-          sizeof(char) * db->nitems;
+    len = sizeof(feature_db) + sizeof(DIRP[N][N]) * db->nitems
+        + sizeof(char) * db->nitems;
 
-    char *current = (char *)db;
+    char* current = (char*)db;
     while ((w = write(fd, current, len)) > 0) {
         current += w;
         len -= w;
@@ -952,12 +967,12 @@ db_save(char *fname, feature_db * db)
     return 0;
 }
 
-feature_db     *
-db_load(char *fname)
+feature_db*
+db_load(char* fname)
 {
-    int fd, len, r;
-    feature_db     *db;
-    struct stat     sb;
+    int         fd, len, r;
+    feature_db* db;
+    struct stat sb;
 
     fprintf(stderr, "loading database file: %s\n", fname);
 
@@ -970,8 +985,8 @@ db_load(char *fname)
         return NULL;
     }
     len = sb.st_size;
-    db = (feature_db *) malloc(len);
-    char           *current = (char *)db;
+    db = (feature_db*)malloc(len);
+    char* current = (char*)db;
     while ((r = read(fd, current, len)) > 0) {
         current += r;
         len -= r;

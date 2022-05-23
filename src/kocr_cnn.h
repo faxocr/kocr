@@ -2,13 +2,13 @@
 #define KOCR_CNN_H
 
 #define THRES_RATIO 2
-#define MAXSTRLEN 1024
+#define MAXSTRLEN   1024
 
 cv::Mat preprocessing_for_cnn(cv::Mat);
 
-char *recognize(Network *, IplImage *);
-char *recognize_multi(Network *, IplImage *);
-char *recog_image(Network *, IplImage *);
+char* recognize(Network*, IplImage*);
+char* recognize_multi(Network*, IplImage*);
+char* recog_image(Network*, IplImage*);
 
 // training is not implemented yet
 /*
@@ -34,11 +34,10 @@ void kocr_average(feature_db * db, char *lst_name);
 extern "C" {
 #endif
 
-_EX_DECL Network *kocr_cnn_init(char *);
-_EX_DECL void kocr_cnn_finish(Network *);
-_EX_DECL char *kocr_recognize_image(Network *, char *);
-_EX_DECL char *kocr_recognize_Image(Network *, IplImage *);
-
+_EX_DECL Network* kocr_cnn_init(char*);
+_EX_DECL void     kocr_cnn_finish(Network*);
+_EX_DECL char*    kocr_recognize_image(Network*, char*);
+_EX_DECL char*    kocr_recognize_Image(Network*, IplImage*);
 
 #ifdef __cplusplus
 }

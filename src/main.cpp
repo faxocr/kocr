@@ -29,16 +29,16 @@
 #define _WITH_GETLINE
 #define _KOCR_MAIN
 
+#include <math.h>
+#include <search.h> // for qsort
 #include <stdio.h>
 #include <stdlib.h>
-#include <search.h> // for qsort
 #include <string.h>
-#include <math.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
@@ -54,21 +54,21 @@
 #include "subr.h"
 #endif
 
-#include "cropnums.h"
 #include "Labeling.h"
+#include "cropnums.h"
 
-#define ERR_DIR "../images/error"
+#define ERR_DIR   "../images/error"
 #define MAXSTRLEN 1024
 
 /* ============================================================
  * ファイル名変換
  * ============================================================ */
-char *
-conv_fname(char *fname, const char *ext)
+char*
+conv_fname(char* fname, const char* ext)
 {
-    int         slen = strlen(fname) + strlen(ext);
-    char           *newname = (char *) malloc(slen);
-    char           *p;
+    int   slen = strlen(fname) + strlen(ext);
+    char* newname = (char*)malloc(slen);
+    char* p;
 
     strcpy(newname, fname);
     p = strrchr(newname, '.');
@@ -82,7 +82,6 @@ conv_fname(char *fname, const char *ext)
 
     return newname;
 }
-
 
 /* ============================================================
  * 利用法説明
@@ -124,14 +123,14 @@ usage()
  * メイン関数
  * ============================================================ */
 int
-main(int argc, char *argv[])
+main(int argc, char* argv[])
 {
-    char *resultstr;
+    char* resultstr;
 
 #ifdef USE_CNN
 
-    Network *net;
-    char *wf_name, *target;
+    Network* net;
+    char *   wf_name, *target;
 
     switch (argc) {
     case 3:
@@ -164,14 +163,13 @@ main(int argc, char *argv[])
 
     // using SVM or Nearest Neighbor
 
-    char           *db_name, *lst_name;
-    feature_db     *db;
+    char *      db_name, *lst_name;
+    feature_db* db;
 
 #ifdef USE_SVM
-    CvSVM *svm;
+    CvSVM*      svm;
 
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
-
         // Database generation
         svm = training(argv[1]);
         if (!svm)
@@ -182,7 +180,6 @@ main(int argc, char *argv[])
     }
 #else
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
-
         // Database generation
         db = training(argv[1]);
         if (!db)
