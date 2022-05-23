@@ -31,9 +31,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <algorithm>
-#include "Labeling.h"
-#include "stdio.h"
+#include <stdio.h>
 
+#include "Labeling.h"
 #include "kocr.h"
 
 #ifndef KOCR_H

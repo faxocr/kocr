@@ -43,6 +43,7 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <opencv/ml.h>
+
 #include "kocr.h"
 #include "subr.h"
 #include "cropnums.h"
