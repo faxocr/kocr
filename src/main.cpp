@@ -172,8 +172,9 @@ main(int argc, char* argv[])
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
         // Database generation
         svm = training(argv[1]);
-        if (!svm)
+        if (!svm) {
             exit(-1);
+        }
         db_name = conv_fname(argv[1], ".xml");
         svm->save(db_name);
         exit(0);
@@ -182,8 +183,9 @@ main(int argc, char* argv[])
     if (argc > 1 && !is_database(argv[1]) && !is_opencvxml(argv[1])) {
         // Database generation
         db = training(argv[1]);
-        if (!db)
+        if (!db) {
             exit(-1);
+        }
         db_name = conv_fname(argv[1], ".db");
         db_save(db_name, db);
         free(db);
@@ -200,8 +202,9 @@ main(int argc, char* argv[])
         db_name = conv_fname(argv[1], ".db");
         if (is_database(db_name)) {
             db = db_load(db_name);
-            if (!db)
+            if (!db) {
                 exit(-1);
+            }
 
             leave_one_out_test(db, argv[1]);
         } else {
@@ -209,8 +212,9 @@ main(int argc, char* argv[])
         }
 #else
         db = db_load(argv[1]);
-        if (!db)
+        if (!db) {
             exit(-1);
+        }
         leave_one_out_test(db);
 #endif
         break;
@@ -221,13 +225,15 @@ main(int argc, char* argv[])
         // argv[1] trained data (xml)
         // argv[2] target image
         svm = kocr_svm_init(argv[1]);
-        if (!svm)
+        if (!svm) {
             exit(-1);
+        }
 
         // Character recognition
         resultstr = kocr_recognize_image(svm, argv[2]);
-        if (!resultstr)
+        if (!resultstr) {
             exit(-1);
+        }
 
         printf("Result: %s\n", resultstr);
         free(resultstr);
@@ -240,8 +246,9 @@ main(int argc, char* argv[])
         }
 
         db = kocr_init(argv[1]);
-        if (!db)
+        if (!db) {
             exit(-1);
+        }
 
         if (!strcmp("exclude", argv[2])) {
             // Exclude error files

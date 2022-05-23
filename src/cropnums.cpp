@@ -89,8 +89,9 @@ cropnum(IplImage* src_img, int startx, int* nextstart)
     bba.x = startx;
     bba.width = src_img->width - startx;
 
-    if (startx >= src_img->width)
+    if (startx >= src_img->width) {
         return NULL;
+    }
 
     maxVal = cvRealScalar(src_img->height * ((1 << (src_img->depth)) - 1));
 
@@ -132,8 +133,9 @@ cropnum(IplImage* src_img, int startx, int* nextstart)
             continue;
         }
     }
-    if (state == 0)
+    if (state == 0) {
         return NULL;
+    }
 
     *nextstart = x;
 
@@ -164,8 +166,9 @@ cropnum(IplImage* src_img, int startx, int* nextstart)
                            src_img->depth,
                            src_img->nChannels);
 
-    if (result == NULL)
+    if (result == NULL) {
         return NULL;
+    }
 
     cvSet(result, CV_RGB(255, 255, 255), NULL);
 
@@ -205,9 +208,10 @@ do_split(IplImage* src_img)
 
     while (startx < width) {
         part_img = cropnum(body, startx, &nextstart);
-        if (part_img == NULL || part_img->width == 0)
+        if (part_img == NULL || part_img->width == 0) {
             break;
             // NOTE:do something other than saving image here
+        }
 #ifdef DEBUG
         sprintf(filename, "file%03d.png", seqnum);
         cvSaveImage(filename, part_img, 0);
@@ -241,8 +245,9 @@ main(int argc, char** argv)
 
     src_img =
         cvLoadImage(argv[1], CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-    if (src_img == NULL)
+    if (src_img == NULL) {
         err_exit();
+    }
 
     dst_img = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
 #if 0

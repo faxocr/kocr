@@ -123,8 +123,9 @@ Contour_Detect(IplImage* Normalized)
 
     /* Initialize */
     for (k = 0; k < 64; k++)
-        for (l = 0; l < 64; l++)
+        for (l = 0; l < 64; l++) {
             ContImg[k][l] = BG;
+        }
 
     /* Scanning */
     for (k = 0; k < 64; k++) {
@@ -157,10 +158,11 @@ Contour_Detect(IplImage* Normalized)
                  *    3   4   5
                  */
 
-                if (l != 0)
+                if (l != 0) {
                     st = 2 + 1;
-                else
+                } else {
                     st = 4;
+                }
 
                 while (1) {
                     for (d = st; d < 8 + st; d++) {
@@ -168,10 +170,12 @@ Contour_Detect(IplImage* Normalized)
                         front_k = last_k + dk[d % 8];
                         front_l = last_l + dl[d % 8];
 
-                        if (front_k < 0 || front_k >= 64)
+                        if (front_k < 0 || front_k >= 64) {
                             continue;
-                        if (front_l < 0 || front_l >= 64)
+                        }
+                        if (front_l < 0 || front_l >= 64) {
                             continue;
+                        }
                         pixelval1 =
                             (unsigned char)Normalized
                                 ->imageData[Normalized->widthStep * front_l
@@ -232,8 +236,9 @@ Contour_To_Directional_Pattern(short contnum)
 
     for (nu = 0; nu < 4; nu++)
         for (x = 0; x < N; x++)
-            for (y = 0; y < N; y++)
+            for (y = 0; y < N; y++) {
                 DirPat[nu][x][y] = 0;
+            }
 
     for (c = 0; c < contnum; c++) {
         for (l = 0; l < ContLen[c]; l++) {
@@ -250,10 +255,12 @@ Contour_To_Directional_Pattern(short contnum)
             y2 = Cont[c][(l - SMOOTHING_STEP + ContLen[c]) % ContLen[c]].y;
 
             theta = atan2((double)(x2 - x1), (double)(y2 - y1));
-            if (ABS(theta) == M_PI)
+            if (ABS(theta) == M_PI) {
                 theta = 0;
-            if (theta < 0)
+            }
+            if (theta < 0) {
                 theta += M_PI;
+            }
 
             d = (short)floor(8.0 * theta / M_PI + 0.5) % 8;
             nu = d / 2;
@@ -297,8 +304,9 @@ Blurring()
 
     total_weight = 0;
     for (i = -4; i <= 4; i++)
-        for (j = -4; j <= 4; j++)
+        for (j = -4; j <= 4; j++) {
             total_weight += Gauss[ABS(i)][ABS(j)];
+        }
 
     for (nu = 0; nu < 4; nu++) {
         for (x = 0; x < N; x++) {
@@ -350,11 +358,13 @@ Equalize_Intensity()
     i = 0;
     for (k = 0; k < (N * N); k += step) {
 #ifdef DEBUG
-        if (i > 255)
+        if (i > 255) {
             fprintf(stderr, "STRANGE value\n");
+        }
 #endif
-        for (j = 0; j < step; j++)
+        for (j = 0; j < step; j++) {
             df.Data[sortbuf[k + j].x][sortbuf[k + j].y].I = (unsigned char)i;
+        }
         i++;
     }
 
@@ -392,8 +402,9 @@ Equalize_Directional_Pattern()
     i = 0;
     for (k = 0; k < (N * N * 4); k += step) {
 #ifdef DEBUG
-        if (i > 255)
+        if (i > 255) {
             fprintf(stderr, "STRANGE\n");
+        }
 #endif
         for (j = 0; j < step; j++)
             df.Data[sortbuf[k + j].x][sortbuf[k + j].y].d[sortbuf[k + j].nu] =
@@ -413,10 +424,12 @@ Compare(const void* i, const void* j)
     // ちょっと心配
     // printf("%g, ", ((SORT *) i)->d);
 
-    if (((SORT*)i)->d > ((SORT*)j)->d)
+    if (((SORT*)i)->d > ((SORT*)j)->d) {
         return (1);
-    if (((SORT*)i)->d < ((SORT*)j)->d)
+    }
+    if (((SORT*)i)->d < ((SORT*)j)->d) {
         return (-1);
+    }
     return (0);
 }
 
@@ -431,8 +444,9 @@ Make_Intensity(IplImage* Normalized)
 
     /* 画素値に関して、64x64->16x16 */
     for (i = 0; i < N; i++)
-        for (j = 0; j < N; j++)
+        for (j = 0; j < N; j++) {
             df.Data[i][j].I = 0;
+        }
 
     for (x = 0; x < 64; x++) {
         i = (x * N) / 64;
@@ -449,10 +463,11 @@ Make_Intensity(IplImage* Normalized)
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++) {
             /* 対応する黒画素が3つ以上の時、黒画素とする */
-            if (df.Data[i][j].I > 2)
+            if (df.Data[i][j].I > 2) {
                 df.Data[i][j].I = 255;
-            else
+            } else {
                 df.Data[i][j].I = 0;
+            }
         }
     }
 }
@@ -469,8 +484,9 @@ Blur_Intensity()
 
     total_weight = 0;
     for (i = -4; i <= 4; i++)
-        for (j = -4; j <= 4; j++)
+        for (j = -4; j <= 4; j++) {
             total_weight += Gausss[ABS(i)][ABS(j)];
+        }
 
     for (x = 0; x < N; x++) {
         for (y = 0; y < N; y++) {
@@ -581,17 +597,20 @@ extract_feature(IplImage* org_img, datafolder** retdf)
 
     // 垂直射影を取る
     vproj = (int*)malloc(sizeof(int) * dst_img->width);
-    for (x = 0; x < dst_img->width; x++)
+    for (x = 0; x < dst_img->width; x++) {
         vproj[x] = 0;
+    }
     for (y = 0; y < dst_img->height; y++) {
         for (x = 0; x < dst_img->width; x++) {
             pixel = cvGet2D(dst_img, y, x);
-            if ((int)pixel.val[0] == 0)
+            if ((int)pixel.val[0] == 0) {
                 vproj[x]++;
+            }
         }
     }
-    for (x = 0; x < dst_img->width; x++)
+    for (x = 0; x < dst_img->width; x++) {
         printf("%d ", vproj[x]);
+    }
     free(vproj);
 #endif
 
@@ -629,10 +648,11 @@ extract_feature(IplImage* org_img, datafolder** retdf)
     for (i = 0; i < dst_img->width; i++) {
         for (j = 0; j < dst_img->height; j++) {
             // labeling.hでは「0」以外を領域とするので、色の反転を
-            if (dst_img_dilate->imageData[j * dst_img->widthStep + i] == 0)
+            if (dst_img_dilate->imageData[j * dst_img->widthStep + i] == 0) {
                 src[j * dst_img->width + i] = 255;
-            else
+            } else {
                 src[j * dst_img->width + i] = 0;
+            }
         }
     }
 
@@ -666,12 +686,13 @@ extract_feature(IplImage* org_img, datafolder** retdf)
     for (cc = 0; cc < num_of_cc; cc++) {
         ri = labeling.GetResultRegionInfo(cc);
         ri->GetSize(size_x, size_y);
-        if (size_x > size_y)
+        if (size_x > size_y) {
             aspect_ratio = (double)size_x / (double)size_y;
-        else
+        } else {
             aspect_ratio = (double)size_y / (double)size_x;
+        }
 
-            // 罫線っぽい連結成分をスキップ
+        // 罫線っぽい連結成分をスキップ
 #ifdef LATTE_CODE
         if (!((aspect_ratio > 10)
               && (ri->GetNumOfPixels() > dst_img_dilate->height / 2))) {
@@ -811,8 +832,9 @@ extract_feature(IplImage* org_img, datafolder** retdf)
     Contour_To_Directional_Pattern(contnum);
     // 結果はCont[],contnumに入っているので、この領域をfreeする
     for (int i = 0; i < contnum; i++) {
-        if (Cont[i] != NULL)
+        if (Cont[i] != NULL) {
             free(Cont[i]);
+        }
     }
 
     // ボカシ処理
@@ -959,8 +981,9 @@ db_save(char* fname, feature_db* db)
     }
 
     close(fd);
-    if (w < 0)
+    if (w < 0) {
         return -1;
+    }
 
     fprintf(stderr, "database file is generated: %s\n", fname);
 
@@ -991,8 +1014,9 @@ db_load(char* fname)
         current += r;
         len -= r;
     }
-    if (r < 0)
+    if (r < 0) {
         return NULL;
+    }
 
     close(fd);
 

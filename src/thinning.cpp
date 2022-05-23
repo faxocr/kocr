@@ -114,8 +114,9 @@ thinningIteration(cv::Mat& im, int iter)
             int m1 = iter == 0 ? (p2 * p4 * p6) : (p2 * p4 * p8);
             int m2 = iter == 0 ? (p4 * p6 * p8) : (p2 * p6 * p8);
 
-            if (A == 1 && (B >= 2 && B <= 6) && m1 == 0 && m2 == 0)
+            if (A == 1 && (B >= 2 && B <= 6) && m1 == 0 && m2 == 0) {
                 marker.at<uchar>(i, j) = 1;
+            }
         }
     }
 
@@ -164,12 +165,14 @@ deskew(cv::Mat& img)
     cv::Mat     img_deskew;
     cv::Mat     rmatrix;
 
-    if (abs(m.mu02) < 1e-2)
+    if (abs(m.mu02) < 1e-2) {
         return; // no op
+    }
 
     double skew = -(m.mu11 / m.mu02) * (180 / M_PI);
-    if (abs(skew) > 50)
+    if (abs(skew) > 50) {
         return; // misdetection
+    }
 
     rmatrix = getRotationMatrix2D(cv::Point2f(img.cols / 2.0, img.rows / 2.0),
                                   skew,
@@ -191,8 +194,9 @@ angle_detect(cv::Mat img, int angles[N][N][ANGLES])
 
     for (i = 0; i < N; i++)
         for (j = 0; j < N; j++)
-            for (int k = 0; k < ANGLES; k++)
+            for (int k = 0; k < ANGLES; k++) {
                 angles[i][j][k] = 0;
+            }
 
     for (i = 0; i < SIZE_NORMALIZED - 2; i++)
         for (j = 0; j < SIZE_NORMALIZED - 2; j++) {
@@ -209,43 +213,53 @@ angle_detect(cv::Mat img, int angles[N][N][ANGLES])
             int P7 = img.at<uchar>(i + 1, j + 0);
             int P8 = img.at<uchar>(i + 1, j + 1);
 
-            if (!P0 && !P1 && !P2 && !P3 && !P4 && !P5 && !P6 && !P7)
+            if (!P0 && !P1 && !P2 && !P3 && !P4 && !P5 && !P6 && !P7) {
                 continue;
+            }
 
-            if (!P8)
+            if (!P8) {
                 continue;
+            }
 #if ANGLES == 8
             // Angle 0
-            if (P7 && P3)
+            if (P7 && P3) {
                 angles[j / M][i / M][0] += 1;
+            }
 
             // Angle 1
-            if (P7 && P2 || P6 && P3)
+            if (P7 && P2 || P6 && P3) {
                 angles[j / M][i / M][1] += 1;
+            }
 
             // Angle 2
-            if (P6 && P2)
+            if (P6 && P2) {
                 angles[j / M][i / M][2] += 1;
+            }
 
             // Angle 3
-            if (P6 && P1 || P5 && P2)
+            if (P6 && P1 || P5 && P2) {
                 angles[j / M][i / M][3] += 1;
+            }
 
             // Angle 4
-            if (P1 && P5)
+            if (P1 && P5) {
                 angles[j / M][i / M][4] += 1;
+            }
 
             // Angle 5
-            if (P0 && P5 || P1 && P4)
+            if (P0 && P5 || P1 && P4) {
                 angles[j / M][i / M][5] += 1;
+            }
 
             // Angle 6
-            if (P0 && P4)
+            if (P0 && P4) {
                 angles[j / M][i / M][6] += 1;
+            }
 
             // Angle 7
-            if (P7 && P4 || P0 && P3)
+            if (P7 && P4 || P0 && P3) {
                 angles[j / M][i / M][7] += 1;
+            }
 #else /* ANGLES == 4 */
 
             // 0 1 2    3  2  1
@@ -253,36 +267,44 @@ angle_detect(cv::Mat img, int angles[N][N][ANGLES])
             // 6 5 4    ー　ー 0
 
             // Angle 0
-            if (P7 && P3)
+            if (P7 && P3) {
                 angles[j / M][i / M][0] += 1;
+            }
 
             // Angle 1
-            if (P7 && P2 || P6 && P3)
+            if (P7 && P2 || P6 && P3) {
                 angles[j / M][i / M][0] += 1;
+            }
 
             // Angle 2
-            if (P6 && P2)
+            if (P6 && P2) {
                 angles[j / M][i / M][1] += 1;
+            }
 
             // Angle 3
-            if (P6 && P1 || P5 && P2)
+            if (P6 && P1 || P5 && P2) {
                 angles[j / M][i / M][1] += 1;
+            }
 
             // Angle 4
-            if (P1 && P5)
+            if (P1 && P5) {
                 angles[j / M][i / M][2] += 1;
+            }
 
             // Angle 5
-            if (P0 && P5 || P1 && P4)
+            if (P0 && P5 || P1 && P4) {
                 angles[j / M][i / M][2] += 1;
+            }
 
             // Angle 6
-            if (P0 && P4)
+            if (P0 && P4) {
                 angles[j / M][i / M][3] += 1;
+            }
 
             // Angle 7
-            if (P7 && P4 || P0 && P3)
+            if (P7 && P4 || P0 && P3) {
                 angles[j / M][i / M][3] += 1;
+            }
 #endif
         }
 }
@@ -347,12 +369,14 @@ density_detect(cv::Mat img, int density[N][N])
     int i, j;
 
     for (i = 0; i < N; i++)
-        for (j = 0; j < N; j++)
+        for (j = 0; j < N; j++) {
             density[j][i] = 0;
+        }
 
     for (i = 0; i < SIZE_NORMALIZED; i++)
-        for (j = 0; j < SIZE_NORMALIZED; j++)
+        for (j = 0; j < SIZE_NORMALIZED; j++) {
             density[j / M][i / M] += img.at<uchar>(i, j) ? 1 : 0;
+        }
 }
 
 /**
@@ -366,10 +390,11 @@ density_print(int density[N][N])
     printf("\n");
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++)
-            if (density[j][i])
+            if (density[j][i]) {
                 printf("%2d ", density[j][i]);
-            else
+            } else {
                 printf(" - ");
+            }
         printf("\n");
     }
     printf("\n");
@@ -463,10 +488,12 @@ angle_print(int angles[N][N][ANGLES])
 #if 0
     for (i = 0; i < N; i++) {
         for (j = 0; j < N; j++)
-            if (mode[j][i])
+            if (mode[j][i]) {
                 printf("%2d ", mode[j][i]);
-            else
+            }
+            else {
                 printf(" * ");
+            }
 
         printf("\n");
     }
@@ -476,10 +503,11 @@ angle_print(int angles[N][N][ANGLES])
         printf("k: %d\n", k);
         for (i = 0; i < N; i++) {
             for (j = 0; j < N; j++)
-                if (angles[j][i][k])
+                if (angles[j][i][k]) {
                     printf("%2d ", angles[j][i][k]);
-                else
+                } else {
                     printf(" * ");
+                }
             printf("\n");
         }
         printf("\n");
@@ -518,8 +546,9 @@ angle_blur(int src[N][N][ANGLES], int dst[N][N][ANGLES])
     // XXX: これは定数ではないか？
     total_weight = 0;
     for (i = -2; i <= 2; i++)
-        for (j = -2; j <= 2; j++)
+        for (j = -2; j <= 2; j++) {
             total_weight += Gauss[ABS(i)][ABS(j)];
+        }
 
     for (nu = 0; nu < 8; nu++) {
         for (x = 0; x < N; x++) {
@@ -618,10 +647,11 @@ backtrack:
         for (i = 0; i < img_eroded.size().height; i++)
             for (j = 0; j < img_eroded.size().width; j++) {
                 // このthicknessの閾値により、認識精度がわずかに変化する
-                if (img_distance.at<float>(i, j) > thickness2 - 1)
+                if (img_distance.at<float>(i, j) > thickness2 - 1) {
                     img_eroded.at<uchar>(i, j) = 0;
-                else if (img_distance.at<float>(i, j) < thickness2 / 2 - 1)
+                } else if (img_distance.at<float>(i, j) < thickness2 / 2 - 1) {
                     img_eroded.at<uchar>(i, j) = 0;
+                }
             }
     }
 
@@ -672,10 +702,11 @@ backtrack:
     for (cc = 0; cc < num_of_cc; cc++) {
         ri = labeling.GetResultRegionInfo(cc);
         ri->GetSize(size_x, size_y);
-        if (size_x > size_y)
+        if (size_x > size_y) {
             aspect_ratio = (double)size_x / (double)size_y;
-        else
+        } else {
             aspect_ratio = (double)size_y / (double)size_x;
+        }
 
         // 罫線っぽい連結成分をスキップ
         if (!((aspect_ratio > 8)
@@ -812,8 +843,9 @@ backtrack:
 #if 0
             features[j][i] = pdensity[j][i];
 #else
-            for (int k = 0; k < ANGLES; k++)
+            for (int k = 0; k < ANGLES; k++) {
                 features[j][i][k] = angles_f[j][i][k];
+            }
 #endif
         }
     }

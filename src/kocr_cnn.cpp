@@ -175,8 +175,9 @@ recognize_multi(Network* net, IplImage* src_img)
     // 文字を１文字ずつ切り出して認識させる
     while (start_x < width) {
         part_img = cropnum(body, start_x, &next_start);
-        if (part_img == NULL || part_img->width == 0)
+        if (part_img == NULL || part_img->width == 0) {
             break;
+        }
 
         cv::Mat src_mat = preprocessing_for_cnn(cv::cvarrToMat(part_img, true));
         for (int i = 0; i < src_tensor.n; i++) {
@@ -204,10 +205,11 @@ recog_image(Network* net, IplImage* src_img)
 {
     char* result;
 
-    if (src_img->width / src_img->height > THRES_RATIO)
+    if (src_img->width / src_img->height > THRES_RATIO) {
         result = recognize_multi(net, src_img);
-    else
+    } else {
         result = recognize(net, src_img);
+    }
     return result;
 }
 
@@ -222,8 +224,9 @@ read_int(std::ifstream& ifs)
 Network*
 kocr_cnn_init(char* filename)
 {
-    if (filename == NULL)
+    if (filename == NULL) {
         return (Network*)NULL;
+    }
 
     std::ifstream ifs(filename);
     int           nb_classes = read_int(ifs);
@@ -297,8 +300,9 @@ kocr_recognize_image(Network* net, char* file_name)
     // OpenCV does not support GIF format
     if (!src_img) {
         char* p = file_name;
-        for (; *p; ++p)
+        for (; *p; ++p) {
             *p = tolower(*p);
+        }
         if (strstr(file_name, ".gif")) {
             printf("This program doesn't support GIF images.\n");
         } else {
@@ -317,8 +321,9 @@ kocr_recognize_image(Network* net, char* file_name)
 char*
 kocr_recognize_Image(Network* net, IplImage* src_img)
 {
-    if (net == NULL || src_img == NULL)
+    if (net == NULL || src_img == NULL) {
         return NULL;
+    }
 
     return recog_image(net, src_img);
 }

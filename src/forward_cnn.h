@@ -352,12 +352,14 @@ public:
                         output.ix(opos) =
                             std::max(output.ix(opos), input.ix(ipos));
                         ipos++;
-                        if ((x + 1) % pool_size[1] == 0)
+                        if ((x + 1) % pool_size[1] == 0) {
                             opos++;
+                        }
                     }
                     ipos += input.shape[3] - max_x;
-                    if ((y + 1) % pool_size[0] != 0)
+                    if ((y + 1) % pool_size[0] != 0) {
                         opos -= output.shape[3];
+                    }
                 }
                 ipos += (input.shape[2] - max_y) * input.shape[3];
             }
@@ -501,8 +503,9 @@ public:
     void
     build()
     {
-        if (layers.size() == 0)
+        if (layers.size() == 0) {
             return;
+        }
         // set input shape
         for (int i = 1; i < layers.size(); i++) {
             layers[i]->set_input_shape(layers[i - 1]->get_output_shape());

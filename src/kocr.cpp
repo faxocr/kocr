@@ -153,8 +153,9 @@ training(char* list_file)
     CvTermCriteria criteria;
     int            char_count[256], class_count;
 
-    for (i = 0; i < 256; i++)
+    for (i = 0; i < 256; i++) {
         char_count[i] = 0;
+    }
 #endif
 
     if ((listfile = fopen(list_file, "rt")) == (FILE*)NULL) {
@@ -170,8 +171,9 @@ training(char* list_file)
     while (fgets(line_buf, sizeof(line_buf), listfile) != NULL) {
         num_of_char++;
         char* p = line_buf;
-        while (isprint(*p))
+        while (isprint(*p)) {
             p++;
+        }
         if (*p != '\n') {
             printf("invalid file format...\n n = %d, *p = %d != %d\n",
                    num_of_char,
@@ -453,8 +455,9 @@ training(char* list_file)
      * mallocした領域を解放する
      */
     for (n = 0; n < num_of_char; n++) {
-        if (char_data[n] == NULL)
+        if (char_data[n] == NULL) {
             continue;
+        }
         for (i = 0; i < X_SIZE; i++) {
             if (char_data[n][i] != NULL) {
                 free(char_data[n][i]);
@@ -547,8 +550,9 @@ leave_one_out_test(feature_db* db)
                     }
                 }
             }
-            if (i == n)
+            if (i == n) {
                 pass_n = 1;
+            }
         }
 
         if (1) {
@@ -685,8 +689,9 @@ recognize(feature_db* db, IplImage* src_img)
 #ifdef THINNING
     int features[N][N][ANGLES];
 
-    if (Extract_Feature(cv::cvarrToMat(src_img, true), features))
+    if (Extract_Feature(cv::cvarrToMat(src_img, true), features)) {
         return 0;
+    }
 
     CvMat* feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
     for (i = 0; i < N; i++) {
@@ -818,8 +823,9 @@ recognize_multi(feature_db* db, IplImage* src_img)
 
     double total = 0;
 
-    if (src_img == NULL)
+    if (src_img == NULL) {
         return NULL;
+    }
 
     // 白黒に変換する(0,255の二値)
     dst_img = cvCreateImage(cvSize(src_img->width, src_img->height), 8, 1);
@@ -851,18 +857,20 @@ recognize_multi(feature_db* db, IplImage* src_img)
     // 文字を１文字ずつ切り出して認識させる
     while (start_x < width) {
         part_img = cropnum(body, start_x, &next_start);
-        if (part_img == NULL || part_img->width == 0)
+        if (part_img == NULL || part_img->width == 0) {
             break;
+        }
 
-            //
-            // 特徴抽出
-            //
+        //
+        // 特徴抽出
+        //
 
 #ifdef THINNING
         int features[N][N][ANGLES];
 
-        if (Extract_Feature(cv::cvarrToMat(part_img, true), features))
+        if (Extract_Feature(cv::cvarrToMat(part_img, true), features)) {
             return 0;
+        }
 
         CvMat* feature_mat = cvCreateMat(1, N * N * ANGLES, CV_32FC1);
         for (i = 0; i < N; i++) {
@@ -983,10 +991,11 @@ recog_image(feature_db* db, IplImage* src_img)
 {
     char* result;
 
-    if (src_img->width / src_img->height > THRES_RATIO)
+    if (src_img->width / src_img->height > THRES_RATIO) {
         result = recognize_multi(db, src_img);
-    else
+    } else {
         result = recognize(db, src_img);
+    }
 
     return result;
 #undef THRES_RATIO
@@ -1012,8 +1021,9 @@ print_line(char* file, int n)
         return;
     }
 
-    if (!(fp = fopen(file, "r")))
+    if (!(fp = fopen(file, "r"))) {
         return;
+    }
 
     n_lines = 0;
     while (getline(&line_buf, &len, fp) > 0) {
@@ -1025,8 +1035,9 @@ print_line(char* file, int n)
     }
     fclose(fp);
 
-    if (!(fp = fopen(file, "r")))
+    if (!(fp = fopen(file, "r"))) {
         return;
+    }
     cache_file = strdup(file);
 
     do {
@@ -1079,8 +1090,9 @@ exclude(feature_db* db, char* lst_name)
     do {
         correct = miss = 0;
         for (n = 0; n < nitems; n++) {
-            if (deleted[n])
+            if (deleted[n]) {
                 continue;
+            }
             min_char_data = -1;
             min_dist = 1e10;
             // 最近傍探索
@@ -1142,8 +1154,9 @@ distance(feature_db* db, char* lst_name)
         min_char_data = -1;
         min_dist = 1e10;
         for (m = 0; m < nitems; m++) {
-            if (m == n || class_data[n] == class_data[m])
+            if (m == n || class_data[n] == class_data[m]) {
                 continue;
+            }
             dist = DIRP_Dist(&feature_data[n], &feature_data[m]);
             if (dist < min_dist) {
                 min_dist = dist;
@@ -1195,8 +1208,9 @@ average(feature_db* db, char* lst_name)
     }
 
     for (c = 0; c < 256; c++) {
-        if (classes[c] == false) //クラスが存在しない場合
+        if (classes[c] == false) { //クラスが存在しない場合
             continue;
+        }
 
         // feature reset
         for (i = 0; i < Y_SIZE; i++) {
@@ -1211,8 +1225,9 @@ average(feature_db* db, char* lst_name)
         //クラスごとの特徴量の総和
         n_class = 0;
         for (n = 0; n < nitems; n++) {
-            if (class_data[n] != c)
+            if (class_data[n] != c) {
                 continue;
+            }
             n_class++;
             for (i = 0; i < Y_SIZE; i++) {
                 for (j = 0; j < X_SIZE; j++) {
@@ -1236,8 +1251,9 @@ average(feature_db* db, char* lst_name)
 
         // print dist
         for (n = 0; n < nitems; n++) {
-            if (class_data[n] != c)
+            if (class_data[n] != c) {
                 continue;
+            }
 
             dist = DIRP_Dist(&feature_ave, &feature_data[n]);
 
@@ -1291,8 +1307,9 @@ is_opencvxml(const char* file_name)
         return FALSE;
     }
 
-    if (strcmp(line, OPENCVXML) != 0)
+    if (strcmp(line, OPENCVXML) != 0) {
         return FALSE;
+    }
 
     fclose(fp);
 
@@ -1306,24 +1323,27 @@ is_opencvxml(const char* file_name)
 void
 kocr_exclude(feature_db* db, char* lst_name)
 {
-    if (db == NULL || lst_name == NULL)
+    if (db == NULL || lst_name == NULL) {
         return;
+    }
     exclude(db, lst_name);
 }
 
 void
 kocr_distance(feature_db* db, char* lst_name)
 {
-    if (db == NULL || lst_name == NULL)
+    if (db == NULL || lst_name == NULL) {
         return;
+    }
     distance(db, lst_name);
 }
 
 void
 kocr_average(feature_db* db, char* lst_name)
 {
-    if (db == NULL || lst_name == NULL)
+    if (db == NULL || lst_name == NULL) {
         return;
+    }
     average(db, lst_name);
 }
 
@@ -1333,8 +1353,9 @@ kocr_svm_init(char* filename)
 {
     CvSVM* svm;
 
-    if (filename == NULL)
+    if (filename == NULL) {
         return (CvSVM*)NULL;
+    }
 
     svm = new CvSVM();
     svm->load(filename);
@@ -1345,8 +1366,9 @@ kocr_svm_init(char* filename)
 feature_db*
 kocr_init(char* filename)
 {
-    if (filename == NULL)
+    if (filename == NULL) {
         return NULL;
+    }
     return db_load(filename);
 }
 #endif
@@ -1359,8 +1381,9 @@ char*
 kocr_recognize_Image(feature_db* db, IplImage* src_img)
 #endif
 {
-    if (db == NULL || src_img == NULL)
+    if (db == NULL || src_img == NULL) {
         return NULL;
+    }
 
     return recog_image(db, src_img);
 }
@@ -1376,10 +1399,11 @@ kocr_recognize_image(feature_db* db, char* file_name)
     IplImage* src_img;
     char*     c;
 
-    if (db == NULL || file_name == NULL)
+    if (db == NULL || file_name == NULL) {
         return NULL;
+    }
 
-        // 元画像を読み込む
+    // 元画像を読み込む
 #if 0
     src_img = cvLoadImage(file_name,
                           CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -1391,8 +1415,9 @@ kocr_recognize_image(feature_db* db, char* file_name)
     // OpenCVはGIFを扱えないらしい
     if (!src_img) {
         char* p = file_name;
-        for (; *p; ++p)
+        for (; *p; ++p) {
             *p = tolower(*p);
+        }
         if (strstr(file_name, ".gif")) {
             printf("This program doesn't support GIF images.\n");
         }
