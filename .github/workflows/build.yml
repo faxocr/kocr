@@ -24,7 +24,7 @@ jobs:
     steps:
       - run: apt-get update -y
       - run: apt-get install -y libtool-bin libopencv-dev
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: (cd src && make SOLVER=${{ matrix.solver }} library all && make SOLVER=${{ matrix.solver }} install)
       - run: ldconfig /usr/local/lib
       - run: /usr/local/bin/kocr
