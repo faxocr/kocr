@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012, Masahiko KIMOTO, Ph.D. <kimoto@ohnolab.org>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -27,7 +27,6 @@
 
 #ifndef _CROPNUMS_H_
 #define _CROPNUMS_H_
-CvRect findBB(IplImage *imgSrc);
-IplImage * cropnum(IplImage *src_img, int startx, int *nextstart);
+CvRect    findBB(IplImage* imgSrc);
+IplImage* cropnum(IplImage* src_img, int startx, int* nextstart);
 #endif
-

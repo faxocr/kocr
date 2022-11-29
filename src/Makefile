@@ -11,6 +11,8 @@ LDFLAGS_OPENCV = `pkg-config --libs opencv`
 FLAGS_LIBTOOL  = --tag=CXX
 CLEAN_TARGET   = main.o kocr_cnn.o cropnums.o thinning.o kocr.o subr.o preprocess.o preprocess
 CFLAGS         = -O3
+FORMATTER      = clang-format
+FORMATTERFLAGS = -i
 
 SOLVER = CNN
 
@@ -64,6 +66,9 @@ libkocr.la: $(LIB_OBJS:.o=.lo)
 
 %.o: %.cpp
 	libtool $(FLAGS_LIBTOOL) --mode=compile $(CXX) -c $(CFLAGS) $(CFLAGS_SOLVER) $(CFLAGS_LIBRARY_MODE) $(CFLAGS_OPENCV) $<
+
+format:
+	$(FORMATTER) $(FORMATTERFLAGS) *.h *.cpp
 
 clean:
 	libtool $(FLAGS_LIBTOOL) --mode=clean rm -f $(TARGET) kocr-static libkocr.la thin $(CLEAN_TARGET:.o=.lo)
